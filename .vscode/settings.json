@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "user_socket.h": "c",
+        "xlink_datapoint.h": "c",
+        "app_config.h": "c"
+    }
+}
