@@ -5,9 +5,7 @@
  *      Author: liruya
  */
 
-#include "espconn.h"
 #include "gpio.h"
-
 #include "app_config.h"
 #include "osapi.h"
 #include "smartconfig.h"
@@ -20,8 +18,8 @@
 /* device include */
 //#include "user_led.h"
 //#include "app_board_led.h"
-#include "user_socket.h"
 #include "app_board_socket.h"
+#include "user_single_socket.h"
 
 
 /******************************************************************************
@@ -86,7 +84,7 @@ void ICACHE_FLASH_ATTR app_init( void )
 //	app_board_led_init();
 //	xlink_init( &user_led );
 	app_board_socket_init();
-	xlink_init( &user_socket );
+	xlink_init( &user_single_socket );
 	user_rtc_init();
 //	user_udp_transfer_init( user_led_decode );
 	user_net_init();
