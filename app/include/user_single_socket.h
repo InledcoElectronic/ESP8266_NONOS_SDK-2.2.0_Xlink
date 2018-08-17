@@ -55,5 +55,7 @@ typedef struct{
 
 extern user_single_socket_t user_single_socket;
 
+extern void user_single_socket_decode_sensor( uint8_t *pbuf, uint8_t len );
+
 #endif /* USER_SINGLE_SOCKET_H_ */
 

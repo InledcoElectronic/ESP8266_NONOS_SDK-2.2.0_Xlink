@@ -8,6 +8,8 @@
 #include "user_single_socket.h"
 #include "user_key.h"
 
+#define GPIO_OUTPUT_GET(gpio_no)		((GPIO_REG_READ(GPIO_OUT_ADDRESS)>>(gpio_no))&BIT0)
+
 #define SOCKET_FIRMWARE_VERSION			1
 #define SOCKET_PRODUCT_ID				"160fa2b60c5503e9160fa2b60c555e01"
 #define	SOCKET_PRODUCT_KEY				"24149adeae917a014282b40d39228bed"
@@ -35,6 +37,9 @@ LOCAL void user_single_socket_datapoint_init();
 LOCAL void user_single_socket_datapoint_changed_cb();
 LOCAL void user_single_socket_update_datapoint();
 LOCAL void user_single_socket_detect_sensor();
+LOCAL bool user_single_socket_linkage_process();
+LOCAL void thermostat_linkage_process( user_sensor_t *psensor );
+LOCAL void user_single_socket_set_sensor( uint8_t chn );
 
 LOCAL key_para_t *pkeys[USER_KEY_NUM];
 LOCAL key_list_t key_list;
@@ -90,7 +95,7 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_print()
 			len += os_sprintf( str+len, "sensor%d:%d    available:true    value:%d", i, user_single_socket.sensor[i].type, user_single_socket.sensor[i].value );
 		}
 	}
-	len += os_sprintf( str+len, "Socket%d: Power:%s timers:%d\n", i, user_single_socket.power ? "On" : "Off", user_single_socket.p_timer->count );
+	len += os_sprintf( str+len, "Socket Power:%s timers:%d\n", user_single_socket.power ? "On" : "Off", user_single_socket.p_timer->count );
 	for ( j = 0; j < user_single_socket.p_timer->count && j < SOCKET_TIMER_MAX; j++ )
 	{
 		socket_timer_t *ptmr = &user_single_socket.p_timer->timers[j];
@@ -148,8 +153,19 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_para_init()
 
 LOCAL void ICACHE_FLASH_ATTR user_single_socket_key_short_press_cb()
 {
+	uint8_t i;
+	/* when use linkage with sensor, manual control is diabled */
+	for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
+	{
+		user_sensor_t *psensor = &user_single_socket.sensor[i];
+		if ( psensor->available && psensor->linkage_enable )
+		{
+			return;
+		}
+	}
 	user_single_socket.power = !user_single_socket.power;
 	GPIO_OUTPUT_SET( user_single_socket.pin, user_single_socket.power );
+	GPIO_OUTPUT_SET( LEDB_IO_NUM, user_single_socket.power ? 0 : 1 );
 	xlink_datapoint_update_all();
 //	if ( user_smartconfig_status() )
 //	{
@@ -215,6 +231,11 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_init()
 
 LOCAL void ICACHE_FLASH_ATTR user_single_socket_process()
 {
+	/* when use linkage with sensor, timer disabled */
+	if ( user_single_socket_linkage_process() )
+	{
+		return;
+	}
 	uint8_t i;
 	bool flag = false;
 	uint16_t ct;
@@ -228,18 +249,19 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_process()
 		{
 			if ( user_single_socket_check_timer( p ) == TIMER_ENABLED && ct == p->timer )
 			{
-				GPIO_OUTPUT_SET( user_single_socket.pin, p->action );
 				if ( p->repeat == 0 )
 				{
 					p->enable = false;
 					user_single_socket.power = p->action;
 					GPIO_OUTPUT_SET( user_single_socket.pin, p->action );
+					GPIO_OUTPUT_SET( LEDB_IO_NUM, !p->action );
 					flag = true;
 				}
 				else if ( (p->repeat&(1<<user_rtc_get_week())) != 0 )
 				{
 					user_single_socket.power = p->action;
 					GPIO_OUTPUT_SET( user_single_socket.pin, p->action );
+					GPIO_OUTPUT_SET( LEDB_IO_NUM, !p->action );
 					flag = true;
 				}
 			}
@@ -248,6 +270,80 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_process()
 		if ( flag )
 		{
 			user_single_socket_print();
+			user_single_socket_update_datapoint();
+			xlink_datapoint_update_all();
+		}
+	}
+}
+
+LOCAL bool user_single_socket_linkage_process()
+{
+	uint8_t i;
+	bool flag = false;
+	for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
+	{
+		user_sensor_t *psensor = &user_single_socket.sensor[i];
+		if ( psensor->available && psensor->linkage_enable )
+		{
+			flag = true;
+			switch( psensor->type )
+			{
+				case SENSOR_TEMPERATURE:
+					thermostat_linkage_process( psensor );
+					break;
+			}
+		}
+	}
+	return flag;
+}
+
+LOCAL void thermostat_linkage_process( user_sensor_t *psensor )
+{
+	uint8_t version = psensor->linkage_arg.version;
+	thermostat_arg_t *pthermostat = &psensor->linkage_arg.thermostat_arg;
+	int8_t thrd = pthermostat->threshold;
+	if ( pthermostat->night_mode_enable )
+	{
+		if ( pthermostat->night_start > 1439 || pthermostat->night_end > 1439 )
+		{
+			return;
+		}
+		uint16_t ct = user_rtc_get_hour() * 60u + user_rtc_get_minute();
+		if ( pthermostat->night_start > pthermostat->night_end )
+		{
+			if ( ct >= pthermostat->night_start || ct < pthermostat->night_end )
+			{
+				/* night */
+				thrd = pthermostat->night_threshold;
+			}
+		}
+		else if ( pthermostat->night_start < pthermostat->night_end )
+		{
+			if ( ct >= pthermostat->night_start && ct < pthermostat->night_end )
+			{
+				/* night */
+				thrd = pthermostat->night_threshold;
+			}
+		}
+	}
+	if ( psensor->value < thrd * 10 )
+	{
+		if ( GPIO_OUTPUT_GET(user_single_socket.pin) == false )
+		{
+			GPIO_OUTPUT_SET(user_single_socket.pin, 1);
+			GPIO_OUTPUT_SET( LEDB_IO_NUM, 0 );
+			user_single_socket.power = true;
+			user_single_socket_update_datapoint();
+			xlink_datapoint_update_all();
+		}
+	}
+	else if ( psensor->value > thrd * 10 + 5 )
+	{
+		if ( GPIO_OUTPUT_GET(user_single_socket.pin) )
+		{
+			GPIO_OUTPUT_SET(user_single_socket.pin, 0);
+			GPIO_OUTPUT_SET( LEDB_IO_NUM, 1 );
+			user_single_socket.power = false;
 			user_single_socket_update_datapoint();
 			xlink_datapoint_update_all();
 		}
@@ -280,7 +376,17 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_datapoint_init()
 
 LOCAL void ICACHE_FLASH_ATTR user_single_socket_datapoint_changed_cb()
 {
+	uint8_t i;
+	for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
+	{
+		user_sensor_t *psensor = &user_single_socket.sensor[i];
+		if(psensor->available)
+		{
+			user_single_socket_set_sensor(i);
+		}
+	}
 	GPIO_OUTPUT_SET( user_single_socket.pin, user_single_socket.power );
+	GPIO_OUTPUT_SET( LEDB_IO_NUM, user_single_socket.power ? 0 : 1 );
 	user_single_socket_update_datapoint();
 	xlink_datapoint_update_all();
 	user_single_socket_save_para();
@@ -346,7 +452,7 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_get_sensor( uint8_t chn )
  * set:	FRM_HDR CMD_SET+chn ntfy linkage version len args... XOR
  * rsp: FRM_HDR CMD_GET+chn TYPE vL vH ntfy linkage version len args... XOR
  */
-void ICACHE_FLASH_ATTR user_single_socket_set_sensor( uint8_t chn )
+LOCAL void ICACHE_FLASH_ATTR user_single_socket_set_sensor( uint8_t chn )
 {
 	if ( chn >= SENSOR_COUNT_MAX )
 	{

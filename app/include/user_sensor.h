@@ -11,7 +11,7 @@
 #include "osapi.h"
 
 #define	LINKAGE_VERSION			1
-#define SENSOR_ARGS_MAX			32
+#define SENSOR_ARGS_MAX			30
 
 #define newLinkageArg()			{	.version=0,\
 									.length=0,\
@@ -26,7 +26,7 @@
 
 typedef enum _sensor_type{
 	SENSOR_UNKOWN,
-	SENSOR_TEMPERATURE,
+	SENSOR_TEMPERATURE = 2,
 	SENSOR_HUMIDITY,
 	SENSOR_WATER_LEVEL,
 	SENSOR_INTENSITY,

@@ -8,6 +8,7 @@
 #include "app_config.h"
 #include "app_board_socket.h"
 #include "gpio.h"
+#include "user_uart.h"
 #ifdef	GPIO16_OUTPUT
 #include "driver/gpio16.h"
 #endif

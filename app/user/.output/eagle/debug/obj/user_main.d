@@ -22,7 +22,6 @@
  ../include/user_net.h ../include/user_udp_server.h ../include/user_net.h \
  ../include/xlink_sdk.h ../include/user_tcp_client.h \
  ../include/app_config.h ../include/user_key.h ../../include/os_type.h \
- ../include/driver/gpio16.h ../include/app_board_socket.h \
- ../include/user_single_socket.h ../include/xlink_datapoint.h \
- ../include/xlink.h ../include/app_board_socket.h \
- ../include/user_sensor.h
+ ../include/driver/gpio16.h ../include/user_uart.h \
+ ../include/driver/uart.h ../include/user_led.h ../../include/pwm.h \
+ ../include/xlink.h ../include/app_board_led.h

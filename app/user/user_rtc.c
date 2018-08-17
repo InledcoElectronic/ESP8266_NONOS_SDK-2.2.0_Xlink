@@ -143,7 +143,7 @@ uint8_t ICACHE_FLASH_ATTR user_rtc_get_week()
 	return g_datetime.week;
 }
 
-uint16_t ICACHE_FLASH_ATTR user_rtc_get_hour()
+uint8_t ICACHE_FLASH_ATTR user_rtc_get_hour()
 {
 	return g_datetime.hour;
 }

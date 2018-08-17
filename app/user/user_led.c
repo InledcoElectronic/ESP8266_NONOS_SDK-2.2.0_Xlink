@@ -924,16 +924,16 @@ LOCAL inline void ICACHE_FLASH_ATTR user_led_pro_process( uint16_t ct, uint8_t s
 	{
 		duration = 1440 - te + ts;
 		dt = (ct - te)*60u + sec;
-		start = led_para.point_count - 1;
-		end = 0;
+		start = index[led_para.point_count - 1];
+		end = index[0];
 		flag = true;
 	}
 	else if ( ct >= 0 && ct < ts )
 	{
 		duration = 1440 - te + ts;
 		dt = (1440 - te + ct)*60u + sec;
-		start = led_para.point_count - 1;
-		end = 0;
+		start = index[led_para.point_count - 1];
+		end = index[0];
 		flag = true;
 	}
 	else
