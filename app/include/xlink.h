@@ -18,7 +18,6 @@ typedef struct{
 	const char product_id[33];
 	const char product_key[33];
 	const uint16_t firmware_version;
-	char upgrade_url[XLINK_UPGRADE_URL_MAX_LENGTH];
 
 	void (* const init)();
 	void (* datapoint_changed_cb)();
@@ -27,7 +26,6 @@ typedef struct{
 #define newXlinkDevice(id,key,ver,devinit,dp_changed_cb)	{.product_id=(id),\
 															 .product_key=(key),\
 															 .firmware_version=(ver),\
-															 .upgrade_url={'\0'},\
 															 .init=(devinit),\
 															 .datapoint_changed_cb=(dp_changed_cb)}
 

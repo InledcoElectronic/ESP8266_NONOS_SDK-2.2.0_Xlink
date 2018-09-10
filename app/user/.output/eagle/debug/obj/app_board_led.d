@@ -17,5 +17,4 @@
  /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/sys/cdefs.h \
  /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/sys/string.h \
  ../../include/os_type.h ../../include/ets_sys.h ../../include/c_types.h \
- ../../include/eagle_soc.h ../include/app_config.h ../../include/gpio.h \
- ../include/driver/gpio16.h ../../include/os_type.h
+ ../../include/eagle_soc.h ../include/app_config.h ../../include/gpio.h

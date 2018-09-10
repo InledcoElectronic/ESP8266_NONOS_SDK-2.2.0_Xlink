@@ -13,7 +13,6 @@
 #include "osapi.h"
 #include "eagle_soc.h"
 #include "gpio.h"
-#include "user_upgrade.h"
 
 #define KEY_SHORT_PRESS_MINTIME		3
 #define	KEY_LONG_PRESS_TIME_MIN		20

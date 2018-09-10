@@ -81,9 +81,6 @@ LOCAL void ICACHE_FLASH_ATTR user_tcp_dns_found( const char *name, ip_addr_t *ip
 	os_timer_disarm( &dns_timer );
 	isDnsFound = true;
 	os_memcpy( user_tcp_client.proto.tcp->remote_ip, &ip->addr, 4 );
-#ifdef	USE_TX_DEBUG
-	os_printf( "dns found..."IPSTR"", IP2STR(user_tcp_client.proto.tcp->remote_ip) );
-#endif
 	espconn_connect( &user_tcp_client );
 }
 
@@ -100,9 +97,6 @@ LOCAL void ICACHE_FLASH_ATTR user_tcp_start_dns( struct espconn *pespconn )
 	os_timer_disarm( &dns_timer );
 	os_timer_setfn( &dns_timer, user_tcp_dns_check_cb, pespconn );
 	os_timer_arm( &dns_timer, 1000, 1 );
-#ifdef	USE_TX_DEBUG
-	os_printf( "start dns..." );
-#endif
 }
 
 void ICACHE_FLASH_ATTR user_tcp_func_process( void *arg )

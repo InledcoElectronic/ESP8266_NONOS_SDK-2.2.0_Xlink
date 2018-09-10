@@ -224,9 +224,16 @@ void XLINK_FUNCTION xlink_event_cb( struct xlink_sdk_instance_t **sdk_instance, 
 				}
 				uint8_t url[128];
 				uint16_t url_length = pevent->event_struct_t.upgrade_t.url_length;
-				os_memset( url, 0, 128 );
-				os_memcpy( url, pevent->event_struct_t.upgrade_t.url, url_length );
-				xlink_upgrade_start( url );
+				if(url_length < 128)
+				{
+					os_memset( url, 0, 128 );
+					os_memcpy( url, pevent->event_struct_t.upgrade_t.url, url_length );
+					xlink_upgrade_start( url );
+				}
+				else
+				{
+					app_printf( "url link too long..." );
+				}
 			}
 			else
 			{

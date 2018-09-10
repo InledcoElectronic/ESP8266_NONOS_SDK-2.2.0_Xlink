@@ -20,9 +20,6 @@
  ../../include/os_type.h ../../include/ets_sys.h \
  ../../include/eagle_soc.h ../../include/mem.h \
  ../../include/user_interface.h ../../include/queue.h \
- ../../include/../app/include/xlink.h \
- ../../include/../app/include/xlink_sdk.h \
- ../../include/../app/include/app_config.h ../../include/spi_flash.h \
- ../../include/gpio.h ../../include/c_types.h ../../include/ip_addr.h \
- ../../include/upgrade.h ../include/user_tcp_client.h \
- ../include/app_config.h
+ ../../include/spi_flash.h ../../include/gpio.h ../../include/c_types.h \
+ ../../include/ip_addr.h ../../include/upgrade.h \
+ ../include/user_tcp_client.h ../include/app_config.h

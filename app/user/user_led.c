@@ -14,6 +14,7 @@
 #include "driver/gpio16.h"
 #include "xlink.h"
 #include "app_config.h"
+#include "app_board_led.h"
 
 #define LED_FIRMWARE_VERSION	1
 #define LED_PRODUCT_ID			"160fa8b5715b03e9160fa8b5715b4401"
@@ -51,6 +52,7 @@
 #define	USER_KEY_NUM					1
 #define USER_KEY_LONG_TIME_NORMAL		40
 #define USER_KEY_LONG_TIME_SMARTCONFIG	200
+#define USER_KEY_LONG_TIME_RESTORE		200
 
 #define PREVIEW_INTERVAL	50
 
@@ -58,11 +60,11 @@ LOCAL key_para_t *pkeys[USER_KEY_NUM];
 LOCAL key_list_t key_list;
 
 LOCAL uint8_t cmd_buffer[DATAPOINT_BIN_MAX_LEN];
-LOCAL uint32_t pwm_io_info[][3] = { {PWM_0_OUT_IO_MUX, PWM_0_OUT_IO_FUNC, PWM_0_OUT_IO_NUM},
-									{PWM_1_OUT_IO_MUX, PWM_1_OUT_IO_FUNC, PWM_1_OUT_IO_NUM},
-									{PWM_2_OUT_IO_MUX, PWM_2_OUT_IO_FUNC, PWM_2_OUT_IO_NUM},
-									{PWM_3_OUT_IO_MUX, PWM_3_OUT_IO_FUNC, PWM_3_OUT_IO_NUM},
-									{PWM_4_OUT_IO_MUX, PWM_4_OUT_IO_FUNC, PWM_4_OUT_IO_NUM}};
+LOCAL uint32_t pwm_io_info[][3] = { {PWM1_IO_MUX, PWM1_IO_FUNC, PWM1_IO_NUM},
+									{PWM2_IO_MUX, PWM2_IO_FUNC, PWM2_IO_NUM},
+									{PWM3_IO_MUX, PWM3_IO_FUNC, PWM3_IO_NUM},
+									{PWM4_IO_MUX, PWM4_IO_FUNC, PWM4_IO_NUM},
+									{PWM5_IO_MUX, PWM5_IO_FUNC, PWM5_IO_NUM}};
 LOCAL const uint8_t *chn_names[LED_CHANNEL_COUNT] = { CHN1_NAME, CHN2_NAME, CHN3_NAME, CHN4_NAME, CHN5_NAME };
 LOCAL uint32_t current_bright[LED_CHANNEL_COUNT] = {0};
 LOCAL uint32_t target_bright[LED_CHANNEL_COUNT] = {0};
@@ -190,16 +192,14 @@ void ICACHE_FLASH_ATTR user_led_para_init()
 	{
 		led_para.blue_bright = BRIGHT_MAX;
 	}
-#if	BRIGHT_MIN > 0
-	if ( led_para.all_bright < BRIGHT_MIN )
+	if ( led_para.all_bright < BRIGHT_MIN2 )
 	{
-		led_para.all_bright = BRIGHT_MIN;
+		led_para.all_bright = BRIGHT_MIN2;
 	}
-	if ( led_para.blue_bright < BRIGHT_MIN )
+	if ( led_para.blue_bright < BRIGHT_MIN2 )
 	{
-		led_para.blue_bright = BRIGHT_MIN;
+		led_para.blue_bright = BRIGHT_MIN2;
 	}
-#endif
 	for ( i = 0; i < LED_CHANNEL_COUNT; i++ )
 	{
 		if ( led_para.bright[i] > BRIGHT_MAX )
@@ -214,12 +214,6 @@ void ICACHE_FLASH_ATTR user_led_para_init()
 		{
 			led_para.night_bright[i] = 100;
 		}
-#if	BRIGHT_MIN > 0
-		if ( led_para.bright[i] < BRIGHT_MIN )
-		{
-			led_para.bright[i] = BRIGHT_MIN;
-		}
-#endif
 		for ( j = 0; j < CUSTOM_COUNT; j++ )
 		{
 			if ( led_para.custom_bright[j][i] > 100 )
@@ -276,17 +270,15 @@ void ICACHE_FLASH_ATTR user_led_para_init()
 	{
 		case LED_STATE_OFF:
 			user_led_indicate_off();
-			user_led_turnoff_direct();
+			user_led_turnoff_ramp();
 			break;
 		case LED_STATE_DAY:
 			user_led_indicate_day();
 			user_led_update_day_bright();
-			user_led_update_day_status();
 			break;
 		case LED_STATE_NIGHT:
 			user_led_indicate_night();
 			user_led_update_night_bright();
-			user_led_update_night_status();
 			break;
 		case LED_STATE_WIFI:
 			user_led_indicate_wifi();
@@ -302,14 +294,16 @@ void ICACHE_FLASH_ATTR user_led_para_init()
 				}
 			}
 			break;
+		default:
+			break;
 	}
 }
 
 void ICACHE_FLASH_ATTR user_led_init_key()
 {
-	pkeys[0] = user_key_init_single( USER_KEY_TOUCH_IO_NUM,
-							  	USER_KEY_TOUCH_FUNC,
-								USER_KEY_TOUCH_IO_MUX,
+	pkeys[0] = user_key_init_single( TOUCH_IO_NUM,
+							  	TOUCH_IO_FUNC,
+								TOUCH_IO_MUX,
 								user_led_onShortPress,
 								user_led_onLongPress,
 								user_led_onContPress,
@@ -333,7 +327,6 @@ LOCAL void ICACHE_FLASH_ATTR user_led_init()
 	pwm_start();
 	user_led_para_init();
 	user_led_datapoint_init();
-//	xlink_setOnDatapointChangedCallback( user_led_datapoint_changed_cb );
 	user_led_init_key();
 	os_timer_disarm( &ramp_timer );
 	os_timer_setfn( &ramp_timer, user_led_ramp, NULL );
@@ -444,54 +437,30 @@ LOCAL void ICACHE_FLASH_ATTR user_led_update_night_bright()
 
 LOCAL void ICACHE_FLASH_ATTR user_led_indicate_off()
 {
-	GPIO_OUTPUT_SET( LEDR_NUM, 0 );
-#ifdef DEMO_BOARD
-	GPIO_OUTPUT_SET( LEDG_NUM, 1 );
-#else
-	gpio16_output_set( 1 );
-#endif
-#ifndef	USE_TX_DEBUG
-	GPIO_OUTPUT_SET( LEDB_NUM, 1 );
-#endif
+	ledr_on();
+	ledg_off();
+	ledb_off();
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_led_indicate_day()
 {
-	GPIO_OUTPUT_SET( LEDR_NUM, 0 );
-#ifdef DEMO_BOARD
-	GPIO_OUTPUT_SET( LEDG_NUM, 0 );
-#else
-	gpio16_output_set( 0 );
-#endif
-#ifndef	USE_TX_DEBUG
-	GPIO_OUTPUT_SET( LEDB_NUM, 0 );
-#endif
+	ledr_on();
+	ledg_on();
+	ledb_on();
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_led_indicate_night()
 {
-	GPIO_OUTPUT_SET( LEDR_NUM, 1 );
-#ifdef DEMO_BOARD
-	GPIO_OUTPUT_SET( LEDG_NUM, 1 );
-#else
-	gpio16_output_set( 1 );
-#endif
-#ifndef	USE_TX_DEBUG
-	GPIO_OUTPUT_SET( LEDB_NUM, 0 );
-#endif
+	ledr_off();
+	ledg_off();
+	ledb_on();
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_led_indicate_wifi()
 {
-	GPIO_OUTPUT_SET( LEDR_NUM, 1 );
-#ifdef DEMO_BOARD
-	GPIO_OUTPUT_SET( LEDG_NUM, 0 );
-#else
-	gpio16_output_set( 0 );
-#endif
-#ifndef	USE_TX_DEBUG
-	GPIO_OUTPUT_SET( LEDB_NUM, 1 );
-#endif
+	ledr_off();
+	ledg_on();
+	ledb_off();
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_led_off_onShortPress()
@@ -500,7 +469,6 @@ LOCAL void ICACHE_FLASH_ATTR user_led_off_onShortPress()
 	led_para.power = 1;
 	user_led_indicate_day();
 	user_led_update_day_bright();
-	user_led_update_day_status();
 	user_led_save_para();
 	xlink_datapoint_update_all();
 }
@@ -534,14 +502,13 @@ LOCAL void ICACHE_FLASH_ATTR user_led_day_onShortPress()
 	led_para.power = 1;
 	user_led_indicate_night();
 	user_led_update_night_bright();
-	user_led_update_night_status();
 	user_led_save_para();
 	xlink_datapoint_update_all();
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_led_day_onLongPress()
 {
-
+	user_led_update_day_status();
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_led_day_onContPress()
@@ -573,7 +540,6 @@ LOCAL void ICACHE_FLASH_ATTR user_led_day_onContPress()
 
 LOCAL void ICACHE_FLASH_ATTR user_led_day_onRelease()
 {
-	user_led_update_day_status();
 	user_led_save_para();
 	xlink_datapoint_update_all();
 }
@@ -581,9 +547,9 @@ LOCAL void ICACHE_FLASH_ATTR user_led_day_onRelease()
 LOCAL void ICACHE_FLASH_ATTR user_led_night_onShortPress()
 {
 	led_para.state++;
-	if ( led_para.last_mode == MODE_AUTO || led_para.last_mode == MODE_PRO )
+	if ( led_para.last_mode == MODE_PRO )
 	{
-		led_para.mode = led_para.last_mode;
+		led_para.mode = MODE_PRO;
 	}
 	else
 	{
@@ -597,7 +563,7 @@ LOCAL void ICACHE_FLASH_ATTR user_led_night_onShortPress()
 
 LOCAL void ICACHE_FLASH_ATTR user_led_night_onLongPress()
 {
-
+	user_led_update_night_status();
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_led_night_onContPress()
@@ -629,7 +595,6 @@ LOCAL void ICACHE_FLASH_ATTR user_led_night_onContPress()
 
 LOCAL void ICACHE_FLASH_ATTR user_led_night_onRelease()
 {
-	user_led_update_night_status();
 	user_led_save_para();
 	xlink_datapoint_update_all();
 }
@@ -784,7 +749,7 @@ LOCAL void ICACHE_FLASH_ATTR user_led_prev_start()
 	os_timer_arm( &prev_timer, PREVIEW_INTERVAL, 1 );
 }
 
-LOCAL inline ICACHE_FLASH_ATTR user_led_auto_proccess( uint16_t ct, uint8_t sec )
+LOCAL ICACHE_FLASH_ATTR user_led_auto_proccess( uint16_t ct, uint8_t sec )
 {
 	if ( ct > 1439 || sec > 59 )
 	{
@@ -878,7 +843,7 @@ LOCAL inline ICACHE_FLASH_ATTR user_led_auto_proccess( uint16_t ct, uint8_t sec 
 	}
 }
 
-LOCAL inline void ICACHE_FLASH_ATTR user_led_pro_process( uint16_t ct, uint8_t sec )
+LOCAL void ICACHE_FLASH_ATTR user_led_pro_process( uint16_t ct, uint8_t sec )
 {
 	if ( ct > 1439 || sec > 59 )
 	{
@@ -914,26 +879,21 @@ LOCAL inline void ICACHE_FLASH_ATTR user_led_pro_process( uint16_t ct, uint8_t s
 			}
 		}
 	}
-	int duration;
-	int dt;
-	int start, end;
-	bool flag = false;
 	int ts = led_para.point_timer[index[0]];
 	int te = led_para.point_timer[index[led_para.point_count-1]];
-	if ( ct >= te && ct <= 1439 )
+	int duration = 1440 - te + ts;
+	int start = index[led_para.point_count - 1];
+	int end = index[0];
+	int dt;
+	bool flag = false;	
+	if ( ct >= te )
 	{
-		duration = 1440 - te + ts;
 		dt = (ct - te)*60u + sec;
-		start = index[led_para.point_count - 1];
-		end = index[0];
 		flag = true;
 	}
-	else if ( ct >= 0 && ct < ts )
+	else if ( ct < ts )
 	{
-		duration = 1440 - te + ts;
 		dt = (1440 - te + ct)*60u + sec;
-		start = index[led_para.point_count - 1];
-		end = index[0];
 		flag = true;
 	}
 	else
@@ -1048,193 +1008,151 @@ LOCAL void ICACHE_FLASH_ATTR user_led_datapoint_init()
 		p_datapoints[34+2*i] = xlink_datapoint_init_binary( LED_CHANNEL_COUNT, (uint8_t *) &led_para.point_bright[i][0] );
 	}
 	p_datapoints[111] = xlink_datapoint_init_byte( (uint8_t *) &prev_flag_shadow );
-	p_datapoints[121] = xlink_datapoint_init_string( 0, (uint8_t *) user_led.xlink_device.upgrade_url );
-	p_datapoints[127] = xlink_datapoint_init_binary( 0, (uint8_t *) &cmd_buffer[0] );
+	// p_datapoints[127] = xlink_datapoint_init_binary( 0, (uint8_t *) &cmd_buffer[0] );
 }
 
-LOCAL void ICACHE_FLASH_ATTR user_led_decode_preview( char *pdata, uint16_t len )
-{
-	uint8_t i;
-	if ( len == LED_CHANNEL_COUNT * 2 + 3 )
-	{
-		for ( i = 0; i < LED_CHANNEL_COUNT; i++ )
-		{
-			uint16_t val = ( pdata[2+2*i] << 8 ) | pdata[3+2*i];
-			if ( val <= BRIGHT_MAX )
-			{
-				current_bright[i] = val;
-			}
-			user_led_load_duty( current_bright[i], i );
-		}
-		pwm_start();
-		user_led_prev_start();
-	}
-}
+// LOCAL void ICACHE_FLASH_ATTR user_led_decode_preview( char *pdata, uint16_t len )
+// {
+// 	uint8_t i;
+// 	if ( len == LED_CHANNEL_COUNT * 2 + 3 )
+// 	{
+// 		for ( i = 0; i < LED_CHANNEL_COUNT; i++ )
+// 		{
+// 			uint16_t val = ( pdata[2+2*i] << 8 ) | pdata[3+2*i];
+// 			if ( val <= BRIGHT_MAX )
+// 			{
+// 				current_bright[i] = val;
+// 			}
+// 			user_led_load_duty( current_bright[i], i );
+// 		}
+// 		pwm_start();
+// 		user_led_prev_start();
+// 	}
+// }
 
-void ICACHE_FLASH_ATTR user_led_decode( void *arg, char *pdata, uint16_t len )
-{
-	if ( find_flag || pdata == NULL || len < 3 || pdata[0] != FRAME_HEADER )
-	{
-		return;
-	}
-	uint8_t i;
-	uint8_t xor = 0;
-	for ( i = 0; i < len; i++ )
-	{
-		xor ^= pdata[i];
-	}
-	if ( xor == 0 )
-	{
-		switch ( pdata[1] )
-		{
-			case CMD_PREV:
-				user_led_decode_preview( pdata, len );
-				break;
+// void ICACHE_FLASH_ATTR user_led_decode( void *arg, char *pdata, uint16_t len )
+// {
+// 	if ( find_flag || pdata == NULL || len < 3 || pdata[0] != FRAME_HEADER )
+// 	{
+// 		return;
+// 	}
+// 	uint8_t i;
+// 	uint8_t xor = 0;
+// 	for ( i = 0; i < len; i++ )
+// 	{
+// 		xor ^= pdata[i];
+// 	}
+// 	if ( xor == 0 )
+// 	{
+// 		switch ( pdata[1] )
+// 		{
+// 			case CMD_PREV:
+// 				user_led_decode_preview( pdata, len );
+// 				break;
 
-			case CMD_PREV_STOP:
-				if ( len == 3 )
-				{
-					user_led_prev_stop( NULL );
-				}
-				break;
+// 			case CMD_PREV_STOP:
+// 				if ( len == 3 )
+// 				{
+// 					user_led_prev_stop( NULL );
+// 				}
+// 				break;
 
-			default:
-				break;
-		}
-	}
-}
+// 			default:
+// 				break;
+// 		}
+// 	}
+// }
 
-void ICACHE_FLASH_ATTR user_led_decode_command()
-{
-	uint8_t i;
-	uint8_t xor = 0;
-	datapoint_t *pdp = p_datapoints[199];
-	if ( pdp != NULL && pdp->length > 0 && pdp->pdata[0] == FRAME_HEADER )
-	{
-		for ( i = 0; i < pdp->length; i++ )
-		{
-			xor ^= pdp->pdata[i];
-		}
-		if ( xor == 0 )
-		{
-			switch ( pdp->pdata[1] )
-			{
-				case CMD_INC:
-					if ( pdp->length == 5 && !find_flag && !prev_flag && led_para.mode == MODE_MANUAL && led_para.power && pdp->pdata[2] < LED_CHANNEL_COUNT )
-					{
-						if ( led_para.bright[pdp->pdata[2]] + pdp->pdata[3] < BRIGHT_MAX )
-						{
-							led_para.bright[pdp->pdata[2]] += pdp->pdata[3];
-						}
-						else
-						{
-							led_para.bright[pdp->pdata[2]] = BRIGHT_MAX;
-						}
-					}
-					break;
+// void ICACHE_FLASH_ATTR user_led_decode_command()
+// {
+// 	uint8_t i;
+// 	uint8_t xor = 0;
+// 	datapoint_t *pdp = p_datapoints[199];
+// 	if ( pdp != NULL && pdp->length > 0 && pdp->pdata[0] == FRAME_HEADER )
+// 	{
+// 		for ( i = 0; i < pdp->length; i++ )
+// 		{
+// 			xor ^= pdp->pdata[i];
+// 		}
+// 		if ( xor == 0 )
+// 		{
+// 			switch ( pdp->pdata[1] )
+// 			{
+// 				case CMD_INC:
+// 					if ( pdp->length == 5 && !find_flag && !prev_flag && led_para.mode == MODE_MANUAL && led_para.power && pdp->pdata[2] < LED_CHANNEL_COUNT )
+// 					{
+// 						if ( led_para.bright[pdp->pdata[2]] + pdp->pdata[3] < BRIGHT_MAX )
+// 						{
+// 							led_para.bright[pdp->pdata[2]] += pdp->pdata[3];
+// 						}
+// 						else
+// 						{
+// 							led_para.bright[pdp->pdata[2]] = BRIGHT_MAX;
+// 						}
+// 					}
+// 					break;
 
-				case CMD_DEC:
-					if ( pdp->length == 5 && !find_flag && !prev_flag && led_para.mode == MODE_MANUAL && led_para.power && pdp->pdata[2] < LED_CHANNEL_COUNT )
-					{
-						if ( led_para.bright[pdp->pdata[2]] > pdp->pdata[3] + BRIGHT_MIN )
-						{
-							led_para.bright[pdp->pdata[2]] -= pdp->pdata[3];
-						}
-						else
-						{
-							led_para.bright[pdp->pdata[2]] = BRIGHT_MIN;
-						}
-					}
-					break;
+// 				case CMD_DEC:
+// 					if ( pdp->length == 5 && !find_flag && !prev_flag && led_para.mode == MODE_MANUAL && led_para.power && pdp->pdata[2] < LED_CHANNEL_COUNT )
+// 					{
+// 						if ( led_para.bright[pdp->pdata[2]] > pdp->pdata[3] + BRIGHT_MIN )
+// 						{
+// 							led_para.bright[pdp->pdata[2]] -= pdp->pdata[3];
+// 						}
+// 						else
+// 						{
+// 							led_para.bright[pdp->pdata[2]] = BRIGHT_MIN;
+// 						}
+// 					}
+// 					break;
 
-				case CMD_PREV:
-					if ( pdp->length == LED_CHANNEL_COUNT * 2 + 3 && !find_flag )
-					{
-						for ( i = 0; i < LED_CHANNEL_COUNT; i++ )
-						{
-							uint16_t val = ( pdp->pdata[2+2*i] << 8 ) | pdp->pdata[3+2*i];
-							if ( val <= BRIGHT_MAX )
-							{
-								current_bright[i] = val;
-							}
-							user_led_load_duty( current_bright[i], i );
-						}
-						pwm_start();
-						user_led_prev_start();
-					}
-					break;
+// 				case CMD_PREV:
+// 					if ( pdp->length == LED_CHANNEL_COUNT * 2 + 3 && !find_flag )
+// 					{
+// 						for ( i = 0; i < LED_CHANNEL_COUNT; i++ )
+// 						{
+// 							uint16_t val = ( pdp->pdata[2+2*i] << 8 ) | pdp->pdata[3+2*i];
+// 							if ( val <= BRIGHT_MAX )
+// 							{
+// 								current_bright[i] = val;
+// 							}
+// 							user_led_load_duty( current_bright[i], i );
+// 						}
+// 						pwm_start();
+// 						user_led_prev_start();
+// 					}
+// 					break;
 
-				case CMD_PREV_STOP:
-					if ( pdp->length == 3 )
-					{
-						user_led_prev_stop( NULL );
-					}
-					break;
+// 				case CMD_PREV_STOP:
+// 					if ( pdp->length == 3 )
+// 					{
+// 						user_led_prev_stop( NULL );
+// 					}
+// 					break;
 
-				case CMD_SYNC_TIME:
+// 				case CMD_SYNC_TIME:
 
-					break;
+// 					break;
 
-				case CMD_FIND:
-					if ( pdp->length == 3 )
-					{
-						user_led_flash();
-					}
-					break;
+// 				case CMD_FIND:
+// 					if ( pdp->length == 3 )
+// 					{
+// 						user_led_flash();
+// 					}
+// 					break;
 
-				default:
-					break;
-			}
-		}
-	}
-}
-
-void ICACHE_FLASH_ATTR user_led_on_update_start()
-{
-	char msg[] = "Device firmware update start";
-	uint32_t len = os_strlen( msg );
-	os_memset( user_led.xlink_device.upgrade_url, 0, XLINK_UPGRADE_URL_MAX_LENGTH );
-	os_memcpy( user_led.xlink_device.upgrade_url, msg, len );
-	p_datapoints[121]->length = len;
-	xlink_datapoint_update_all();
-}
-
-void ICACHE_FLASH_ATTR user_led_on_update_failed()
-{
-	char msg[] = "Device firmware update failed";
-	uint32_t len = os_strlen( msg );
-	os_memset( user_led.xlink_device.upgrade_url, 0, XLINK_UPGRADE_URL_MAX_LENGTH );
-	os_memcpy( user_led.xlink_device.upgrade_url, msg, len );
-	p_datapoints[121]->length = len;
-	xlink_datapoint_update_all();
-}
-
-void ICACHE_FLASH_ATTR user_led_on_update_success()
-{
-	char msg[] = "Device firmware update success";
-	uint32_t len = os_strlen( msg );
-	os_memset( user_led.xlink_device.upgrade_url, 0, XLINK_UPGRADE_URL_MAX_LENGTH );
-	os_memcpy( user_led.xlink_device.upgrade_url, msg, len );
-	p_datapoints[121]->length = len;
-	xlink_datapoint_update_all();
-}
+// 				default:
+// 					break;
+// 			}
+// 		}
+// 	}
+// }
 
 void ICACHE_FLASH_ATTR user_led_datapoint_changed_cb()
 {
 	led_para.state = LED_STATE_WIFI;
 	pkeys[0]->long_count = USER_KEY_LONG_TIME_SMARTCONFIG;
 	user_led_indicate_wifi();
-	uint32_t len = os_strlen( user_led.xlink_device.upgrade_url );
-	char target_url[XLINK_UPGRADE_URL_MAX_LENGTH];
-	if ( len > 0 )
-	{
-		os_memset( target_url, 0, XLINK_UPGRADE_URL_MAX_LENGTH );
-		os_memcpy( target_url, user_led.xlink_device.upgrade_url, len );
-		os_memset( user_led.xlink_device.upgrade_url, 0, XLINK_UPGRADE_URL_MAX_LENGTH );
-		p_datapoints[121]->length = 0;
-		xlink_upgrade_start( target_url );
-		return;
-	}
 //	user_led_decode_command();
 	if ( find_flag )
 	{

@@ -21,9 +21,5 @@
  /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/sys/string.h \
  ../../include/os_type.h ../../include/ets_sys.h ../../include/mem.h \
  ../../include/os_type.h ../../include/user_interface.h \
- ../../include/ip_addr.h ../../include/queue.h \
- ../../include/../app/include/xlink.h \
- ../../include/../app/include/xlink_sdk.h ../../include/ip_addr.h \
- ../../include/upgrade.h ../../include/espconn.h \
- ../../include/../app/include/app_config.h ../../include/spi_flash.h \
+ ../../include/ip_addr.h ../../include/queue.h ../../include/spi_flash.h \
  ../../include/gpio.h

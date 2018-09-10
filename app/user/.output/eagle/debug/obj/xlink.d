@@ -18,10 +18,8 @@
  ../../include/os_type.h ../../include/ets_sys.h ../../include/c_types.h \
  ../../include/eagle_soc.h ../../include/mem.h \
  ../../include/user_interface.h ../../include/ip_addr.h \
- ../../include/queue.h ../../include/../app/include/xlink.h \
- ../../include/../app/include/xlink_sdk.h \
- ../../include/../app/include/app_config.h ../../include/spi_flash.h \
- ../../include/gpio.h ../../include/c_types.h ../../include/ip_addr.h \
- ../../include/upgrade.h ../../include/espconn.h ../include/xlink.h \
- ../include/app_config.h ../include/xlink_config.h \
- ../include/xlink_datapoint.h
+ ../../include/queue.h ../../include/spi_flash.h ../../include/gpio.h \
+ ../../include/c_types.h ../../include/ip_addr.h ../../include/upgrade.h \
+ ../../include/espconn.h ../include/xlink.h ../include/xlink_sdk.h \
+ ../include/app_config.h ../include/app_config.h \
+ ../include/xlink_config.h ../include/xlink_datapoint.h

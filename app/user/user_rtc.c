@@ -102,6 +102,11 @@ LOCAL void ICACHE_FLASH_ATTR user_rtc_1s_cb( void *arg )
 			if ( g_datetime.hour > 23 )
 			{
 				g_datetime.hour = 0;
+				g_datetime.week++;
+				if(g_datetime.week > 6)
+				{
+					g_datetime.week = 0;
+				}
 				g_datetime.day++;
 				month_days = MONTH[g_datetime.month-1];
 				if ( g_datetime.month == 2 && user_rtc_is_leap_year( g_datetime.year ) )

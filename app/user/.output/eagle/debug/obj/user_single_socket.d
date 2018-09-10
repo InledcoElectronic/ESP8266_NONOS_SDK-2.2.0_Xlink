@@ -21,9 +21,8 @@
  ../../include/os_type.h ../../include/ets_sys.h ../../include/c_types.h \
  ../../include/eagle_soc.h ../../include/mem.h \
  ../../include/user_interface.h ../../include/ip_addr.h \
- ../../include/queue.h ../../include/../app/include/xlink.h \
- ../../include/spi_flash.h ../../include/gpio.h ../../include/ip_addr.h \
- ../../include/upgrade.h ../../include/espconn.h ../include/app_config.h \
- ../../include/eagle_soc.h ../include/app_board_socket.h \
- ../include/user_sensor.h ../include/user_key.h ../../include/gpio.h \
- ../../include/os_type.h
+ ../../include/queue.h ../../include/spi_flash.h ../../include/gpio.h \
+ ../../include/ip_addr.h ../../include/upgrade.h ../../include/espconn.h \
+ ../include/app_config.h ../../include/eagle_soc.h \
+ ../include/app_board_socket.h ../include/user_sensor.h \
+ ../include/user_key.h ../../include/gpio.h ../../include/os_type.h

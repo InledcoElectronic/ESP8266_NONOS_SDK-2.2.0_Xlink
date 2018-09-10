@@ -18,8 +18,6 @@
 #define PERIPHS_IO_MUX_GPIO14_U		PERIPHS_IO_MUX_MTMS_U
 #define PERIPHS_IO_MUX_GPIO15_U		PERIPHS_IO_MUX_MTDO_U
 
-#define GPIO16_OUTPUT
-
 #define BOOT_IO_NUM			0
 #define BOOT_IO_MUX			PERIPHS_IO_MUX_GPIO0_U
 #define BOOT_IO_FUNC		FUNC_GPIO0
@@ -42,6 +40,9 @@
 #define TOUCH_IO_NUM		14
 #define TOUCH_IO_MUX		PERIPHS_IO_MUX_GPIO14_U
 #define TOUCH_IO_FUNC		FUNC_GPIO14
+// #define TOUCH_IO_NUM		0
+// #define TOUCH_IO_MUX		PERIPHS_IO_MUX_GPIO0_U
+// #define TOUCH_IO_FUNC		FUNC_GPIO0
 #define LEDR_IO_NUM			12
 #define LEDR_IO_MUX			PERIPHS_IO_MUX_GPIO12_U
 #define LEDR_IO_FUNC		FUNC_GPIO12
@@ -51,6 +52,13 @@
 #define LEDB_IO_NUM			1
 #define LEDB_IO_MUX			PERIPHS_IO_MUX_GPIO1_U
 #define LEDB_IO_FUNC		FUNC_GPIO1
+
+#define ledr_on()           GPIO_OUTPUT_SET(LEDR_IO_NUM, 0)
+#define ledr_off()          GPIO_OUTPUT_SET(LEDR_IO_NUM, 1)
+#define ledg_on()           gpio16_output_set(0)
+#define ledg_off()          gpio16_output_set(1)
+#define ledb_on()           GPIO_OUTPUT_SET(LEDB_IO_NUM, 0)
+#define ledb_off()          GPIO_OUTPUT_SET(LEDB_IO_NUM, 1)
 
 extern void app_board_led_init();
 

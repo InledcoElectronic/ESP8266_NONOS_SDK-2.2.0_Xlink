@@ -33,7 +33,6 @@
 #endif
 
 #include "queue.h"
-#include "../app/include/xlink.h"
 #include "spi_flash.h"
 #include "gpio.h"
 

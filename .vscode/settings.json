@@ -3,6 +3,20 @@
         "user_socket.h": "c",
         "xlink_datapoint.h": "c",
         "app_config.h": "c",
-        "app_board_led.h": "c"
+        "app_board_led.h": "c",
+        "osapi.h": "c",
+        "user_interface.h": "c",
+        "string.h": "c",
+        "smartconfig.h": "c",
+        "uart.h": "c",
+        "user_net.h": "c",
+        "user_udp_server.h": "c",
+        "xlink_sdk.h": "c",
+        "mem.h": "c",
+        "os_type.h": "c",
+        "user_led.h": "c",
+        "type_traits": "c",
+        "initializer_list": "c",
+        "string_view": "c"
     }
 }

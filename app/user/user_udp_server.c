@@ -6,16 +6,14 @@
  */
 
 #include "user_udp_server.h"
-#include "../include/user_uart.h"
-#include "../include/xlink.h"
+#include "user_uart.h"
+#include "xlink.h"
 
 #define UDP_TRANSFER_LOCAL_PORT			8266
 #define UDP_TRANSFER_REMOTE_PORT		9587
 
 LOCAL struct espconn user_udp_server;
 LOCAL struct espconn user_udp_transfer;
-
-//LOCAL user_udp_recv_pipe_cb_t user_udp_recv_pipe_cb;
 
 void ICACHE_FLASH_ATTR user_udp_server_init( void )
 {

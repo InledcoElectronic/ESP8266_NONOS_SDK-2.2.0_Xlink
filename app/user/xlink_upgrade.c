@@ -6,8 +6,7 @@
  */
 
 #include "xlink_upgrade.h"
-
-#include "../include/app_config.h"
+#include "app_config.h"
 #include "upgrade.h"
 
 #define XLINK_UPGRADE_LINK		"static.xlink.cn"

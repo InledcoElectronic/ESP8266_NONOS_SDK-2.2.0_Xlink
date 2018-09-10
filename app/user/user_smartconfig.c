@@ -69,6 +69,7 @@ LOCAL void ICACHE_FLASH_ATTR user_smartconfig_done( sc_status status, void *pdat
 			}
 			os_timer_disarm( &sc_timer );
 #ifdef	SMARTCONFIG_USE_LED
+			sc_led_flash_cnt = 0;
 			os_timer_disarm( &sc_led_timer );
 			os_timer_setfn( &sc_led_timer, user_smartconfig_success_led_cb, NULL );
 			os_timer_arm( &sc_led_timer, 200, 1 );
