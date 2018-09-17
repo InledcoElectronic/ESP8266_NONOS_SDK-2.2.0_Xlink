@@ -72,7 +72,7 @@ LINKFLAGS_eagle.app.v6 = \
 	-lupgrade	\
 	-lsmartconfig \
 	-lairkiss\
-	-lxlinksdkv5\
+	-lxlinkv6\
 	-lxlinkmqtt\
 	-lxlinkmqttsn\
 	$(DEP_LIBS_eagle.app.v6)					\

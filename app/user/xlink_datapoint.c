@@ -7,7 +7,7 @@
 
 #include "xlink_datapoint.h"
 
-#include "../include/app_config.h"
+#include "app_config.h"
 #include "xlink_sdk.h"
 #include "xlink.h"
 #include "c_types.h"
@@ -143,6 +143,53 @@ datapoint_t XLINK_FUNCTION *xlink_datapoint_init_string( uint8_t len, uint8_t *p
 datapoint_t XLINK_FUNCTION *xlink_datapoint_init_binary( uint8_t len, uint8_t *pdata )
 {
 	return xlink_datapoint_init( DP_TYPE_BINARY, len, pdata );
+}
+
+uint16_t XLINK_FUNCTION xlink_probe_datapoints_to_array(uint8_t *dp_idx, uint16_t dp_length, uint8_t *pdata)
+{
+	uint8_t i;
+	uint8_t j = 0;
+	uint8_t idx = 0;
+	datapoint_t *pdp = NULL;
+	for(i = 0; i < dp_length; i++)
+	{
+		j = dp_idx[i];
+		if(j < DATAPOINT_MAX_NUM)
+		{
+			pdp = p_datapoints[j];
+			if(xlink_datapoint_check(pdp) && pdp->length > 0 )
+			{
+				pdata[idx++] = j;
+				pdata[idx++] = pdp->array[1];
+				pdata[idx++] = pdp->array[0];
+				switch(pdp->type)
+				{
+					case DP_TYPE_BYTE:
+					case DP_TYPE_INT16:
+					case DP_TYPE_UINT16:
+					case DP_TYPE_INT32:
+					case DP_TYPE_UINT32:
+					case DP_TYPE_INT64:
+					case DP_TYPE_UINT64:
+					case DP_TYPE_FLOAT:
+					case DP_TYPE_DOUBLE:
+						for ( j = pdp->length; j > 0; j-- )
+						{
+							pdata[idx++] = pdp->pdata[j-1];
+						}
+						break;
+					case DP_TYPE_STRING:
+					case DP_TYPE_BINARY:
+						os_memcpy( pdata + idx, pdp->pdata, pdp->length );
+						idx += pdp->length;
+						break;
+					default:
+						break;
+				}
+			}
+		}
+	}
+	return idx;
 }
 
 uint16_t XLINK_FUNCTION xlink_datapoints_to_array( uint8_t *pdata )

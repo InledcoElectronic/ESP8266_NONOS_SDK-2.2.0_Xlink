@@ -18,11 +18,20 @@
  /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/sys/string.h \
  ../../include/os_type.h ../../include/ets_sys.h ../../include/c_types.h \
  ../../include/eagle_soc.h ../../include/pwm.h ../include/xlink.h \
- ../include/xlink_sdk.h ../../include/mem.h \
- ../../include/user_interface.h ../../include/ip_addr.h \
- ../../include/queue.h ../../include/spi_flash.h ../../include/gpio.h \
- ../../include/c_types.h ../../include/ip_addr.h ../../include/upgrade.h \
- ../../include/espconn.h ../include/xlink_config.h \
- ../../include/os_type.h ../include/user_key.h ../../include/gpio.h \
- ../include/xlink_datapoint.h ../include/driver/gpio16.h \
- ../include/xlink.h ../include/app_config.h ../include/app_board_led.h
+ ../include/xlink_sdk.h \
+ /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/stdio.h \
+ /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/lib/gcc/xtensa-lx106-elf/4.8.5/include/stdarg.h \
+ /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/sys/types.h \
+ /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/machine/types.h \
+ /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/sys/stdio.h \
+ /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/stdlib.h \
+ /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/machine/stdlib.h \
+ /home/liruya/ESP/esp-open-sdk/xtensa-lx106-elf/xtensa-lx106-elf/include/alloca.h \
+ ../../include/mem.h ../../include/user_interface.h \
+ ../../include/ip_addr.h ../../include/queue.h ../../include/spi_flash.h \
+ ../../include/gpio.h ../../include/c_types.h ../../include/ip_addr.h \
+ ../../include/upgrade.h ../../include/espconn.h \
+ ../include/xlink_config.h ../../include/os_type.h ../include/user_key.h \
+ ../../include/gpio.h ../include/xlink_datapoint.h \
+ ../include/driver/gpio16.h ../include/xlink.h ../include/app_config.h \
+ ../include/app_board_led.h

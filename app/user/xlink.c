@@ -312,5 +312,41 @@ xlink_int32 XLINK_FUNCTION xlink_update_datapoint_no_alarm( const xlink_uint8 **
 	return xlink_update_datapoint( &p_xlink_sdk_instance, &msgid, data, datamaxlength, 0 );
 }
 
+xlink_int32 XLINK_FUNCTION xlink_get_rssi_cb(struct xlink_sdk_instance_t **sdk_instance, xlink_uint16 *result, xlink_int16 *rssi, xlink_uint16 *AP_STA)
+{
+	xlink_int32 ret = -1;
+	uint8_t wifimode, wifirssi;
+	wifimode = wifi_get_opmode();
+	if(wifimode == 0x01)
+	{
+		wifimode = 0;
+	}
+	else
+	{
+		wifimode = 1;
+	}
+	wifirssi = wifi_station_get_rssi();
+	if(wifirssi == 32)
+	{
+		return -1;
+	}
+	*result = ret;
+	*rssi = wifirssi;
+	*AP_STA = wifimode;
+	return ret;
+}
+
+xlink_int32 XLINK_FUNCTION xlink_get_custom_test_data_cb(struct xlink_sdk_instance_t **sdk_instance,  xlink_uint16 *result,xlink_uint8 **data, xlink_int32 datamaxlength)
+{
+
+}
+
+xlink_int32 XLINK_FUNCTION xlink_probe_datapoint_cb(struct xlink_sdk_instance_t **sdk_instance, const xlink_uint8 **dp_idx, xlink_uint8 dp_idx_length, xlink_uint8 **buffer, xlink_int32 datamaxlength)
+{
+	xlink_uint8 *dp_index = (xlink_uint8 *) *dp_idx;
+	xlink_uint8 *data = (xlink_uint8 *) *buffer;
+	return xlink_probe_datapoints_to_array(dp_index, dp_idx_length, data);
+}
+
 
 

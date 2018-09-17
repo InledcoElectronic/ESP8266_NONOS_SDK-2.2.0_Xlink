@@ -67,6 +67,7 @@ extern datapoint_t *xlink_datapoint_init_float( uint8_t *pdata );
 extern datapoint_t *xlink_datapoint_init_double( uint8_t *pdata );
 extern datapoint_t *xlink_datapoint_init_string( uint8_t len, uint8_t *pdata );
 extern datapoint_t *xlink_datapoint_init_binary( uint8_t len, uint8_t *pdata );
+extern uint16_t xlink_probe_datapoints_to_array(uint8_t *dp_idx, uint16_t dp_length, uint8_t *pdata);
 extern uint16_t xlink_datapoints_to_array( uint8_t *pdata );
 extern void xlink_array_to_datapoints( const uint8_t *pdata, uint16_t data_length );
 extern void xlink_datapoint_update_all();

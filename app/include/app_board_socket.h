@@ -43,6 +43,15 @@
 //#define RELAY1_IO_MUX		PERIPHS_IO_MUX_GPIO4_U
 //#define RELAY1_IO_FUNC		FUNC_GPIO4
 
+#define ledr_on()           GPIO_OUTPUT_SET(LEDR_IO_NUM, 0)
+#define ledr_off()          GPIO_OUTPUT_SET(LEDR_IO_NUM, 1)
+#define ledg_on()           GPIO_OUTPUT_SET(LEDG_IO_NUM, 0)
+#define ledg_off()          GPIO_OUTPUT_SET(LEDG_IO_NUM, 1)
+#define ledb_on()           GPIO_OUTPUT_SET(LEDB_IO_NUM, 0)
+#define ledb_off()          GPIO_OUTPUT_SET(LEDB_IO_NUM, 1)
+#define relay_on()          GPIO_OUTPUT_SET(RELAY1_IO_NUM, 1)
+#define relay_off()         GPIO_OUTPUT_SET(RELAY1_IO_NUM, 0)
+
 extern void app_board_socket_init();
 
 #endif /* APP_BOARD_SOCKET_H_ */
