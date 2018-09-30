@@ -163,7 +163,7 @@ uint8_t ICACHE_FLASH_ATTR user_rtc_get_second()
 	return g_datetime.second;
 }
 
-uint8_t ICACHE_FLASH_ATTR user_rtc_get_zone()
+uint16_t ICACHE_FLASH_ATTR user_rtc_get_zone()
 {
 	return g_datetime.zone;
 }

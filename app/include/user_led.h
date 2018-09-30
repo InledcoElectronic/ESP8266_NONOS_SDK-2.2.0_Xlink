@@ -33,6 +33,20 @@
 #define MODE_AUTO				1
 #define	MODE_PRO				2
 
+typedef union{
+	struct{
+		uint16_t sunrise_start;
+		uint8_t sunrise_ramp;
+		uint8_t day_bright[LED_CHANNEL_COUNT];
+		uint16_t sunset_start;
+		uint8_t sunset_ramp;
+		uint8_t night_bright[LED_CHANNEL_COUNT];
+		bool turnoff_enabled;
+		uint16_t turnoff_time;
+	};
+	uint8_t array[2*LED_CHANNEL_COUNT+9];
+}auto_para_t;
+
 typedef struct {
 	/* Off All Blue WiFi */
 	unsigned saved_flag : 8;
@@ -42,6 +56,9 @@ typedef struct {
 	unsigned blue_bright : 10;
 
 	/* WiFi Para */
+	uint8_t location_flag;
+	float longitude;										//经度
+	float latitude;											//纬度
 	uint16_t zone;											//时区
 	uint8_t mode;											//模式 Manual / Auto / Pro
 
@@ -49,8 +66,13 @@ typedef struct {
 	uint8_t power;											//手动模式 开/关
 	uint16_t bright[LED_CHANNEL_COUNT];							//通道亮度
 	uint8_t custom_bright[CUSTOM_COUNT][LED_CHANNEL_COUNT];		//自定义亮度
+	uint32_t manual_reserved;
 
 	/* Auto Mode */
+	// bool sunrs_from_location;								//按照设置日出日落时间 或者 按照地理位置计算日出日落时间
+	// bool moonrs_from_location;								//按照设置关断灯光 或者按照地理位置计算月落时间关断灯光
+	// auto_para_t month_auto_para[12];
+	// uint8_t auto_reserved[32];
 	uint16_t sunrise_start;									//日出开始时间
 	uint16_t sunrise_end;									//日出结束时间
 	uint8_t day_bright[LED_CHANNEL_COUNT];						//白天亮度

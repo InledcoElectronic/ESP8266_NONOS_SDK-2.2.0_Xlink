@@ -16,7 +16,7 @@
 #include "app_config.h"
 #include "app_board_led.h"
 
-#define LED_FIRMWARE_VERSION	1
+#define LED_FIRMWARE_VERSION	2
 #define LED_PRODUCT_ID			"160fa8b5715b03e9160fa8b5715b4401"
 #define LED_PRODUCT_KEY			"10bfe20dcb76aaee3f99668a068145a6"
 
@@ -120,39 +120,77 @@ LOCAL void ICACHE_FLASH_ATTR user_led_load_duty( uint32_t value, uint8_t chn )
 void ICACHE_FLASH_ATTR user_led_default_para()
 {
 	uint8_t i, j;
+	os_memset(&led_para, 0, sizeof(led_para));
 	led_para.last_mode = MODE_AUTO;
 	led_para.state = LED_STATE_OFF;
 	led_para.all_bright = BRIGHT_MAX;
 	led_para.blue_bright = BRIGHT_MAX;
+
+	led_para.location_flag = 0;
+	led_para.longitude = 0;
+	led_para.latitude = 0;
 	led_para.zone = 800;
 	led_para.mode = MODE_MANUAL;
 	led_para.power = 0;
 	for ( i = 0; i < LED_CHANNEL_COUNT; i++ )
 	{
 		led_para.bright[i] = BRIGHT_MAX;
-		led_para.day_bright[i] = 100;
-		led_para.night_bright[i] = 0;
 		for ( j = 0; j < CUSTOM_COUNT; j++ )
 		{
 			led_para.custom_bright[j][i] = 100;
 		}
 	}
-	led_para.night_bright[NIGHT_CHANNEL] = 5;
+
+	// led_para.sunrs_from_location = false;
+	// led_para.moonrs_from_location = false;
+	// for(i = 0; i < 12; i++)
+	// {
+	// 	led_para.month_auto_para[i].sunrise_start = 420;		//07:00
+	// 	led_para.month_auto_para[i].sunrise_ramp = 60;
+	// 	led_para.month_auto_para[i].sunset_start = 1020;		//17:00
+	// 	led_para.month_auto_para[i].sunset_ramp = 60;
+	// 	led_para.month_auto_para[i].turnoff_enabled = true;
+	// 	led_para.month_auto_para[i].turnoff_time = 1320;		//22:00
+		
+	// 	for(j = 0; j < LED_CHANNEL_COUNT; j++)
+	// 	{
+	// 		led_para.month_auto_para[i].day_bright[j] = 100;
+	// 		led_para.month_auto_para[i].night_bright[j] = 0;
+	// 	}
+	// 	led_para.month_auto_para[i].night_bright[NIGHT_CHANNEL] = 5;
+	// }
+		
 	led_para.sunrise_start = 480;					//08:00
 	led_para.sunrise_end = 540;						//09:00
 	led_para.sunset_start = 1080;					//18:00
 	led_para.sunset_end = 1140;						//19:00
 	led_para.turnoff_enabled = true;
 	led_para.turnoff_time = 1320;					//22:00
-	led_para.point_count = 6;
-	for ( i = 0; i < POINT_COUNT_MAX; i++ )
+	for(i = 0; i < LED_CHANNEL_COUNT; i++)
 	{
-		led_para.point_timer[i] = i * 120 + 120;
-		for ( j = 0; j < LED_CHANNEL_COUNT; j++ )
-		{
-			led_para.point_bright[i][j] = 100;
-		}
+		led_para.day_bright[i] = 100;
+		led_para.night_bright[i] = 0;
 	}
+	led_para.night_bright[NIGHT_CHANNEL] = 5;
+
+	led_para.point_count = 6;
+	led_para.point_timer[0] = 420;						//07:00
+	led_para.point_timer[1] = 480;						//08:00
+	led_para.point_timer[2] = 1020;						//17:00
+	led_para.point_timer[3] = 1080;						//18:00
+	led_para.point_timer[4] = 1320;						//22:00
+	led_para.point_timer[5] = 1350;						//22:30
+	for(i = 0; i < LED_CHANNEL_COUNT; i++)
+	{
+		led_para.point_bright[0][i] = 0;
+		led_para.point_bright[1][i] = 100;
+		led_para.point_bright[2][i] = 100;
+		led_para.point_bright[3][i] = 0;
+		led_para.point_bright[4][i] = 0;
+		led_para.point_bright[5][i] = 0;
+	}
+	led_para.point_bright[3][NIGHT_CHANNEL] = 5;
+	led_para.point_bright[4][NIGHT_CHANNEL] = 5;
 }
 
 void ICACHE_FLASH_ATTR user_led_para_init()
@@ -176,13 +214,9 @@ void ICACHE_FLASH_ATTR user_led_para_init()
 		}
 	}
 
-	if ( led_para.power > 0 )
+	if ( led_para.power > 1 )
 	{
 		led_para.power = 1;
-	}
-	if ( led_para.turnoff_enabled > 0 )
-	{
-		led_para.turnoff_enabled = 1;
 	}
 	if ( led_para.all_bright > BRIGHT_MAX )
 	{
@@ -206,14 +240,6 @@ void ICACHE_FLASH_ATTR user_led_para_init()
 		{
 			led_para.bright[i] = BRIGHT_MAX;
 		}
-		if ( led_para.day_bright[i] > 100 )
-		{
-			led_para.day_bright[i] = 100;
-		}
-		if ( led_para.night_bright[i] > 100 )
-		{
-			led_para.night_bright[i] = 100;
-		}
 		for ( j = 0; j < CUSTOM_COUNT; j++ )
 		{
 			if ( led_para.custom_bright[j][i] > 100 )
@@ -222,6 +248,46 @@ void ICACHE_FLASH_ATTR user_led_para_init()
 			}
 		}
 	}
+	
+	// for(i = 0; i < 12; i++)
+	// {
+	// 	if(led_para.month_auto_para[i].sunrise_start > TIME_VALUE_MAX)
+	// 	{
+	// 		led_para.month_auto_para[i].sunrise_start = 0;
+	// 	}
+	// 	if(led_para.month_auto_para[i].sunset_start > TIME_VALUE_MAX)
+	// 	{
+	// 		led_para.month_auto_para[i].sunset_start = 0;
+	// 	}
+	// 	if(led_para.month_auto_para[i].turnoff_time > TIME_VALUE_MAX)
+	// 	{
+	// 		led_para.month_auto_para[i].turnoff_time = 0;
+	// 	}
+	// 	if(led_para.month_auto_para[i].sunrise_ramp > 240)
+	// 	{
+	// 		led_para.month_auto_para[i].sunrise_start = 240;
+	// 	}
+	// 	if(led_para.month_auto_para[i].sunset_ramp > 240)
+	// 	{
+	// 		led_para.month_auto_para[i].sunset_ramp = 240;
+	// 	}
+	// 	if(led_para.month_auto_para[i].turnoff_enabled > 1)
+	// 	{
+	// 		led_para.month_auto_para[i].turnoff_enabled = 1;
+	// 	}
+	// 	for(j = 0; j < LED_CHANNEL_COUNT; j++)
+	// 	{
+	// 		if(led_para.month_auto_para[i].day_bright[j] > 100)
+	// 		{
+	// 			led_para.month_auto_para[i].day_bright[j] = 100;
+	// 		}
+	// 		if(led_para.month_auto_para[i].night_bright[j] > 100)
+	// 		{
+	// 			led_para.month_auto_para[i].night_bright[j] = 100;
+	// 		}
+	// 	}	
+	// }
+	
 	if ( led_para.sunrise_start > TIME_VALUE_MAX )
 	{
 		led_para.sunrise_start = 0;
@@ -241,6 +307,21 @@ void ICACHE_FLASH_ATTR user_led_para_init()
 	if ( led_para.turnoff_time > TIME_VALUE_MAX )
 	{
 		led_para.turnoff_time = 0;
+	}
+	if ( led_para.turnoff_enabled > 1 )
+	{
+		led_para.turnoff_enabled = 1;
+	}
+	for(j = 0; j < LED_CHANNEL_COUNT; j++)
+	{
+		if(led_para.day_bright[j] > 100)
+		{
+			led_para.day_bright[j] = 100;
+		}
+		if(led_para.night_bright[j] > 100)
+		{
+			led_para.night_bright[j] = 100;
+		}
 	}
 
 	if ( led_para.point_count < POINT_COUNT_MIN )
@@ -764,7 +845,15 @@ LOCAL ICACHE_FLASH_ATTR user_led_auto_proccess( uint16_t ct, uint8_t sec )
 	uint16_t st, et, duration;
 	uint32_t dt;
 	uint8_t dbrt;
-	uint16_t tm[6] = { led_para.sunrise_start,
+	// uint8_t midx = user_rtc_get_month() - 1;
+	// auto_para_t auto_para = led_para.month_auto_para[midx];
+	// uint16_t tm[6] = { 	auto_para.sunrise_start,
+	// 					auto_para.sunrise_start+auto_para.sunrise_ramp,
+	// 					auto_para.sunset_start,
+	// 					auto_para.sunset_start+auto_para.sunset_ramp,
+	// 					auto_para.turnoff_time,
+	// 					auto_para.turnoff_time};
+	uint16_t tm[6] = { 	led_para.sunrise_start,
 						led_para.sunrise_end,
 						led_para.sunset_start,
 						led_para.sunset_end,
@@ -979,7 +1068,7 @@ LOCAL void ICACHE_FLASH_ATTR user_led_datapoint_init()
 	uint8_t i;
 	uint16_t idx = 0;
 	p_datapoints[0] = xlink_datapoint_init_byte( (uint8_t *) &user_led.channel_count );
-	p_datapoints[1] = xlink_datapoint_init_uint16( (uint8_t *) &led_para.zone );
+	// p_datapoints[1] = xlink_datapoint_init_uint16( (uint8_t *) &led_para.zone );
 	p_datapoints[10] = xlink_datapoint_init_byte( &led_para.mode );
 	p_datapoints[11] = xlink_datapoint_init_byte( (uint8_t *) &led_para.power );
 	for ( i = 0; i < LED_CHANNEL_COUNT; i++ )
@@ -1008,7 +1097,15 @@ LOCAL void ICACHE_FLASH_ATTR user_led_datapoint_init()
 		p_datapoints[34+2*i] = xlink_datapoint_init_binary( LED_CHANNEL_COUNT, (uint8_t *) &led_para.point_bright[i][0] );
 	}
 	p_datapoints[111] = xlink_datapoint_init_byte( (uint8_t *) &prev_flag_shadow );
-	// p_datapoints[127] = xlink_datapoint_init_binary( 0, (uint8_t *) &cmd_buffer[0] );
+
+	p_datapoints[101] = xlink_datapoint_init_uint16( (uint8_t *) &led_para.zone );
+	p_datapoints[102] = xlink_datapoint_init_float( (uint8_t *) &led_para.longitude );
+	p_datapoints[103] = xlink_datapoint_init_float( (uint8_t *) &led_para.latitude );
+	
+	// for(i = 0; i < 12; i++)
+	// {
+	// 	p_datapoints[61+i] = xlink_datapoint_init_binary(sizeof(auto_para_t), (uint8_t *) &led_para.month_auto_para[i]);
+	// }
 }
 
 // LOCAL void ICACHE_FLASH_ATTR user_led_decode_preview( char *pdata, uint16_t len )

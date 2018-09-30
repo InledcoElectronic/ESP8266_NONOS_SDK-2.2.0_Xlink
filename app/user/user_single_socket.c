@@ -20,11 +20,10 @@
 
 #define	PARA_SAVED_FLAG					0x55
 #define	PARA_DEFAULT_FLAG				0xFF
-#define	SOCKET_TIMER_AVAILABLE_FLAG		0x55
 
 #define FRAME_HEADER	0x68
-#define CMD_GET			0x10
-#define CMD_SET			0x20
+#define CMD_SET			0x10
+#define CMD_GET			0x11
 
 LOCAL socket_config_t m_socket_config;
 
@@ -39,7 +38,7 @@ LOCAL void user_single_socket_update_datapoint();
 LOCAL void user_single_socket_detect_sensor();
 LOCAL bool user_single_socket_linkage_process();
 LOCAL void thermostat_linkage_process( user_sensor_t *psensor );
-LOCAL void user_single_socket_set_sensor( uint8_t chn );
+LOCAL void user_single_socket_set_sensor();
 
 LOCAL key_para_t *pkeys[USER_KEY_NUM];
 LOCAL key_list_t key_list;
@@ -58,7 +57,7 @@ user_single_socket_t user_single_socket = {
 	.power = false,
 	.p_timer = &m_socket_config.socket_timer
 };
-
+user_sensor_t user_sensor[SENSOR_COUNT_MAX];
 
 LOCAL timer_error_t ICACHE_FLASH_ATTR user_single_socket_check_timer( socket_timer_t *p_timer )
 {
@@ -66,11 +65,11 @@ LOCAL timer_error_t ICACHE_FLASH_ATTR user_single_socket_check_timer( socket_tim
 	{
 		return TIMER_INVALID;
 	}
-	if ( p_timer->flag != SOCKET_TIMER_AVAILABLE_FLAG )
+	if ( p_timer->timer > 1439 )
 	{
 		return TIMER_INVALID;
 	}
-	if ( p_timer->timer > 1439 )
+	if( (p_timer->action > 1 && p_timer->action < 5) || p_timer->action >= 60 )
 	{
 		return TIMER_INVALID;
 	}
@@ -81,35 +80,52 @@ LOCAL timer_error_t ICACHE_FLASH_ATTR user_single_socket_check_timer( socket_tim
 	return TIMER_DISABLED;
 }
 
+LOCAL void ICACHE_FLASH_ATTR user_single_socket_update_timers()
+{
+	uint8_t i;
+	if ( m_socket_config.socket_timer.count > SOCKET_TIMER_MAX )
+	{
+		m_socket_config.socket_timer.count = 0;
+	}
+	for ( i = 0; i < m_socket_config.socket_timer.count; i++ )
+	{
+		if ( user_single_socket_check_timer( &m_socket_config.socket_timer.timers[i] ) == TIMER_INVALID )
+		{
+			m_socket_config.socket_timer.count = i;
+			break;
+		}
+	}
+}
+
 LOCAL void ICACHE_FLASH_ATTR user_single_socket_print()
 {
-	uint8_t i, j, k;
-	uint8_t len = 0;
-	char str[256];
-	char *week[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-	os_memset( str, '\0', 256 );
-	for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
-	{
-		if ( user_single_socket.sensor[i].available )
-		{
-			len += os_sprintf( str+len, "sensor%d:%d    available:true    value:%d", i, user_single_socket.sensor[i].type, user_single_socket.sensor[i].value );
-		}
-	}
-	len += os_sprintf( str+len, "Socket Power:%s timers:%d\n", user_single_socket.power ? "On" : "Off", user_single_socket.p_timer->count );
-	for ( j = 0; j < user_single_socket.p_timer->count && j < SOCKET_TIMER_MAX; j++ )
-	{
-		socket_timer_t *ptmr = &user_single_socket.p_timer->timers[j];
-		if ( user_single_socket_check_timer( ptmr ) != TIMER_INVALID )
-		{
-			len += os_sprintf( str+len, "\t%s ", ptmr->enable ? "Enabled" : "Disabled" );
-			for ( k = 7; k > 0; k-- )
-			{
-				len += os_sprintf( str+len, " %s ", (ptmr->repeat & (1<<(k-1))) ? week[k-1] : "*" );
-			}
-			len += os_sprintf( str+len, " %d:%d ->%s\n", ptmr->timer/60, ptmr->timer%60, ptmr->action ? "Turnon" : "Turnoff" );
-		}
-	}
-	app_printf( "%s", str );
+	// uint8_t i, j, k;
+	// uint8_t len = 0;
+	// char str[256];
+	// char *week[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+	// os_memset( str, '\0', 256 );
+	// for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
+	// {
+	// 	if ( user_single_socket.sensor[i].available )
+	// 	{
+	// 		len += os_sprintf( str+len, "sensor%d:%d    available:true    value:%d", i, user_single_socket.sensor[i].type, user_single_socket.sensor[i].value );
+	// 	}
+	// }
+	// len += os_sprintf( str+len, "Socket Power:%s timers:%d\n", user_single_socket.power ? "On" : "Off", user_single_socket.p_timer->count );
+	// for ( j = 0; j < user_single_socket.p_timer->count && j < SOCKET_TIMER_MAX; j++ )
+	// {
+	// 	socket_timer_t *ptmr = &user_single_socket.p_timer->timers[j];
+	// 	if ( user_single_socket_check_timer( ptmr ) != TIMER_INVALID )
+	// 	{
+	// 		len += os_sprintf( str+len, "\t%s ", ptmr->enable ? "Enabled" : "Disabled" );
+	// 		for ( k = 7; k > 0; k-- )
+	// 		{
+	// 			len += os_sprintf( str+len, " %s ", (ptmr->repeat & (1<<(k-1))) ? week[k-1] : "*" );
+	// 		}
+	// 		len += os_sprintf( str+len, " %d:%d ->%s\n", ptmr->timer/60, ptmr->timer%60, ptmr->action ? "Turnon" : "Turnoff" );
+	// 	}
+	// }
+	// app_printf( "%s", str );
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_single_socket_default_para()
@@ -132,41 +148,32 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_para_init()
 	{
 		user_single_socket_default_para();
 	}
-	if ( m_socket_config.zone >= 2400 )
+	if ( m_socket_config.zone > 2400 )
 	{
 		m_socket_config.zone = 0;
 	}
-	uint8_t i;
-	if ( m_socket_config.socket_timer.count > SOCKET_TIMER_MAX )
-	{
-		m_socket_config.socket_timer.count = 0;
-	}
-	for ( i = 0; i < m_socket_config.socket_timer.count; i++ )
-	{
-		if ( user_single_socket_check_timer( &m_socket_config.socket_timer.timers[i] ) == TIMER_INVALID )
-		{
-			m_socket_config.socket_timer.count = i;
-			break;
-		}
-	}
+	user_single_socket_update_timers();
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_single_socket_key_short_press_cb()
 {
 	uint8_t i;
+	xlink_disconnect_cloud();
+	xlink_reset();
+	system_restart();
 	/* when use linkage with sensor, manual control is diabled */
-	for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
-	{
-		user_sensor_t *psensor = &user_single_socket.sensor[i];
-		if ( psensor->available && psensor->linkage_enable )
-		{
-			return;
-		}
-	}
-	user_single_socket.power = !user_single_socket.power;
-	GPIO_OUTPUT_SET( user_single_socket.pin, user_single_socket.power );
-	GPIO_OUTPUT_SET( LEDB_IO_NUM, user_single_socket.power ? 0 : 1 );
-	xlink_datapoint_update_all();
+	// for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
+	// {
+	// 	user_sensor_t *psensor = &user_single_socket.sensor[i];
+	// 	if ( psensor->available && psensor->linkage_enable )
+	// 	{
+	// 		return;
+	// 	}
+	// }
+	// user_single_socket.power = !user_single_socket.power;
+	// GPIO_OUTPUT_SET( user_single_socket.pin, user_single_socket.power );
+	// GPIO_OUTPUT_SET( LEDB_IO_NUM, user_single_socket.power ? 0 : 1 );
+	// xlink_datapoint_update_all();
 //	if ( user_smartconfig_status() )
 //	{
 //		return;
@@ -238,41 +245,60 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_process()
 	}
 	uint8_t i;
 	bool flag = false;
-	uint16_t ct;
-	socket_timer_t *p = NULL;
+	bool action = false;
+	socket_timer_t *p = user_single_socket.p_timer->timers;
 	uint8_t sec = user_rtc_get_second();
-	if ( sec == 0 )
+	uint16_t ct = user_rtc_get_hour() * 60u + user_rtc_get_minute();
+	user_single_socket_update_timers();
+	for ( i = 0; i < user_single_socket.p_timer->count; i++ )
 	{
-		ct = user_rtc_get_hour() * 60u + user_rtc_get_minute();
-		p = user_single_socket.p_timer->timers;
-		for ( i = 0; i < SOCKET_TIMER_MAX; i++ )
+		if ( user_single_socket_check_timer( p ) == TIMER_ENABLED && ct == p->timer )
 		{
-			if ( user_single_socket_check_timer( p ) == TIMER_ENABLED && ct == p->timer )
+			if(sec == 0)
 			{
 				if ( p->repeat == 0 )
 				{
-					p->enable = false;
-					user_single_socket.power = p->action;
-					GPIO_OUTPUT_SET( user_single_socket.pin, p->action );
-					GPIO_OUTPUT_SET( LEDB_IO_NUM, !p->action );
+					if(p->action == 0 || p->action == 1)
+					{
+						p->enable = false;
+					}
+					action = p->action > 0 ? true : false;
 					flag = true;
 				}
 				else if ( (p->repeat&(1<<user_rtc_get_week())) != 0 )
 				{
-					user_single_socket.power = p->action;
-					GPIO_OUTPUT_SET( user_single_socket.pin, p->action );
-					GPIO_OUTPUT_SET( LEDB_IO_NUM, !p->action );
+					action = p->action > 0 ? true : false;
 					flag = true;
 				}
 			}
-			p++;
+			else
+			{
+				if(p->action >= 5 && p->action < 60 && sec == p->action)
+				{
+					if(p->repeat == 0)
+					{
+						p->enable = false;
+						flag = true;
+						action = false;
+					}
+					else if ( (p->repeat&(1<<user_rtc_get_week())) != 0 )
+					{
+						flag = true;
+						action = false;
+					}
+				}
+			}
 		}
-		if ( flag )
-		{
-			user_single_socket_print();
-			user_single_socket_update_datapoint();
-			xlink_datapoint_update_all();
-		}
+		p++;
+	}
+	if ( flag )
+	{
+		user_single_socket.power = action;
+		GPIO_OUTPUT_SET( user_single_socket.pin, action );
+		GPIO_OUTPUT_SET( LEDB_IO_NUM, action ? 0 : 1 );
+		// user_single_socket_print();
+		user_single_socket_update_datapoint();
+		xlink_datapoint_update_all();
 	}
 }
 
@@ -302,28 +328,25 @@ LOCAL void thermostat_linkage_process( user_sensor_t *psensor )
 	uint8_t version = psensor->linkage_arg.version;
 	thermostat_arg_t *pthermostat = &psensor->linkage_arg.thermostat_arg;
 	int8_t thrd = pthermostat->threshold;
-	if ( pthermostat->night_mode_enable )
+	if ( pthermostat->night_start > 1439 || pthermostat->night_end > 1439 )
 	{
-		if ( pthermostat->night_start > 1439 || pthermostat->night_end > 1439 )
+		return;
+	}
+	uint16_t ct = user_rtc_get_hour() * 60u + user_rtc_get_minute();
+	if ( pthermostat->night_start > pthermostat->night_end )
+	{
+		if ( ct >= pthermostat->night_start || ct < pthermostat->night_end )
 		{
-			return;
+			/* night */
+			thrd = pthermostat->night_threshold;
 		}
-		uint16_t ct = user_rtc_get_hour() * 60u + user_rtc_get_minute();
-		if ( pthermostat->night_start > pthermostat->night_end )
+	}
+	else if ( pthermostat->night_start < pthermostat->night_end )
+	{
+		if ( ct >= pthermostat->night_start && ct < pthermostat->night_end )
 		{
-			if ( ct >= pthermostat->night_start || ct < pthermostat->night_end )
-			{
-				/* night */
-				thrd = pthermostat->night_threshold;
-			}
-		}
-		else if ( pthermostat->night_start < pthermostat->night_end )
-		{
-			if ( ct >= pthermostat->night_start && ct < pthermostat->night_end )
-			{
-				/* night */
-				thrd = pthermostat->night_threshold;
-			}
+			/* night */
+			thrd = pthermostat->night_threshold;
 		}
 	}
 	if ( psensor->value < thrd * 10 )
@@ -374,23 +397,42 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_datapoint_init()
 	p_datapoints[18] = xlink_datapoint_init_binary( 4 + 4*user_single_socket.p_timer->count, (uint8_t *)user_single_socket.p_timer );
 }
 
+LOCAL bool ICACHE_FLASH_ATTR user_single_socket_linkage_args_changed()
+{
+	uint8_t i, j;
+	for(i = 0; i < SENSOR_COUNT_MAX; i++)
+	{
+		if(user_single_socket.sensor[i].notify_enable != user_sensor[i].notify_enable)
+		{
+			return true;
+		}
+		if(user_single_socket.sensor[i].linkage_enable != user_sensor[i].linkage_enable)
+		{
+			return true;
+		}
+		for(j = 0; j < SENSOR_ARGS_MAX; j++)
+		{
+			if(user_single_socket.sensor[i].linkage_arg.arg_array[j] != user_sensor[i].linkage_arg.arg_array[j])
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 LOCAL void ICACHE_FLASH_ATTR user_single_socket_datapoint_changed_cb()
 {
-	uint8_t i;
-	for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
+	if(user_single_socket_linkage_args_changed())
 	{
-		user_sensor_t *psensor = &user_single_socket.sensor[i];
-		if(psensor->available)
-		{
-			user_single_socket_set_sensor(i);
-		}
+		user_single_socket_set_sensor();
 	}
 	GPIO_OUTPUT_SET( user_single_socket.pin, user_single_socket.power );
 	GPIO_OUTPUT_SET( LEDB_IO_NUM, user_single_socket.power ? 0 : 1 );
 	user_single_socket_update_datapoint();
 	xlink_datapoint_update_all();
 	user_single_socket_save_para();
-	user_single_socket_print();
+	// user_single_socket_print();
 }
 
 LOCAL void user_single_socket_update_datapoint()
@@ -400,6 +442,7 @@ LOCAL void user_single_socket_update_datapoint()
 	{
 		p_datapoints[9+6*i]->length = user_single_socket.sensor[i].linkage_arg.length+2;
 	}
+	user_single_socket_update_timers();
 	p_datapoints[18]->length = 4 + 4*user_single_socket.p_timer->count;
 }
 
@@ -417,6 +460,7 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_detect_sensor()
 		uint8_t i;
 		for ( i = 0; i < SENSOR_COUNT_MAX; i++ )
 		{
+			os_memset( &user_sensor[i], 0, sizeof( user_sensor[i] ) );
 			os_memset( &user_single_socket.sensor[i], 0, sizeof( user_single_socket.sensor[i] ) );
 		}
 		user_single_socket_update_datapoint();
@@ -431,19 +475,15 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_detect_sensor()
 }
 
 /**
- * get:	FRM_HDR CMD_GET+chn XOR
- * set:	FRM_HDR CMD_SET+chn ntfy linkage version len args... XOR
- * rsp: FRM_HDR CMD_GET+chn TYPE vL vH ntfy linkage version len args... XOR
+ * get:	FRM_HDR CMD_GET XOR
+ * set:	FRM_HDR CMD_SET {ntfy linkage version len args...}... XOR
+ * rsp: FRM_HDR CMD_GET {TYPE vL vH ntfy linkage version len args...}... XOR
  */
-LOCAL void ICACHE_FLASH_ATTR user_single_socket_get_sensor( uint8_t chn )
+LOCAL void ICACHE_FLASH_ATTR user_single_socket_get_sensor()
 {
-	if ( chn >= SENSOR_COUNT_MAX )
-	{
-		return;
-	}
 	uint8_t xor = 0;
 	xor ^= uart0_send_byte( FRAME_HEADER );
-	xor ^= uart0_send_byte( CMD_GET + chn );
+	xor ^= uart0_send_byte( CMD_GET );
 	uart0_send_byte( xor );
 }
 
@@ -452,39 +492,71 @@ LOCAL void ICACHE_FLASH_ATTR user_single_socket_get_sensor( uint8_t chn )
  * set:	FRM_HDR CMD_SET+chn ntfy linkage version len args... XOR
  * rsp: FRM_HDR CMD_GET+chn TYPE vL vH ntfy linkage version len args... XOR
  */
-LOCAL void ICACHE_FLASH_ATTR user_single_socket_set_sensor( uint8_t chn )
+// LOCAL void ICACHE_FLASH_ATTR user_single_socket_set_sensor( uint8_t chn )
+// {
+// 	if ( chn >= SENSOR_COUNT_MAX )
+// 	{
+// 		return;
+// 	}
+// 	user_sensor_t *psensor = &user_single_socket.sensor[chn];
+// 	if ( psensor->linkage_arg.length > 0 && psensor->linkage_arg.length < SENSOR_ARGS_MAX )
+// 	{
+// 		uint8_t i;
+// 		uint8_t xor = 0;
+// 		xor ^= uart0_send_byte( FRAME_HEADER );
+// 		xor ^= uart0_send_byte( CMD_SET + chn );
+// 		xor ^= uart0_send_byte( psensor->notify_enable );
+// 		xor ^= uart0_send_byte( psensor->linkage_enable );
+// 		xor ^= uart0_send_byte( psensor->linkage_arg.version );
+// 		xor ^= uart0_send_byte( psensor->linkage_arg.length );
+// 		for ( i = 0; i < psensor->linkage_arg.length; i++ )
+// 		{
+// 			xor ^= uart0_send_byte( psensor->linkage_arg.arg_array[i] );
+// 		}
+// 		uart0_send_byte( xor );
+// 	}
+// }
+
+/**
+ * get:	FRM_HDR CMD_GET XOR
+ * set:	FRM_HDR CMD_SET {ntfy linkage version len args...}... XOR
+ * rsp: FRM_HDR CMD_GET {TYPE vL vH ntfy linkage version len args...}... XOR
+ */
+LOCAL void ICACHE_FLASH_ATTR user_single_socket_set_sensor()
 {
-	if ( chn >= SENSOR_COUNT_MAX )
+	uint8_t i, j;
+	uint8_t xor = 0;
+	xor ^= uart0_send_byte( FRAME_HEADER );
+	xor ^= uart0_send_byte( CMD_SET );
+	for(i = 0; i < SENSOR_COUNT_MAX; i++)
 	{
-		return;
-	}
-	user_sensor_t *psensor = &user_single_socket.sensor[chn];
-	if ( psensor->linkage_arg.length > 0 && psensor->linkage_arg.length < SENSOR_ARGS_MAX )
-	{
-		uint8_t i;
-		uint8_t xor = 0;
-		xor ^= uart0_send_byte( FRAME_HEADER );
-		xor ^= uart0_send_byte( CMD_SET + chn );
-		xor ^= uart0_send_byte( psensor->notify_enable );
-		xor ^= uart0_send_byte( psensor->linkage_enable );
-		xor ^= uart0_send_byte( psensor->linkage_arg.version );
-		xor ^= uart0_send_byte( psensor->linkage_arg.length );
-		for ( i = 0; i < psensor->linkage_arg.length; i++ )
+		if(user_single_socket.sensor[i].available)
 		{
-			xor ^= uart0_send_byte( psensor->linkage_arg.arg_array[i] );
+			xor ^= uart0_send_byte( user_single_socket.sensor[i].notify_enable );
+			xor ^= uart0_send_byte( user_single_socket.sensor[i].linkage_enable );
+			xor ^= uart0_send_byte( user_single_socket.sensor[i].linkage_arg.version );
+			xor ^= uart0_send_byte( user_single_socket.sensor[i].linkage_arg.length );
+			for ( j = 0; j < user_single_socket.sensor[i].linkage_arg.length; j++ )
+			{
+				xor ^= uart0_send_byte( user_single_socket.sensor[i].linkage_arg.arg_array[j] );
+			}
 		}
-		uart0_send_byte( xor );
+		else
+		{
+			break;
+		}
 	}
+	uart0_send_byte( xor );
 }
 
 /**
- * get:	FRM_HDR CMD_GET+chn XOR
- * set:	FRM_HDR CMD_SET+chn ntfy linkage version len args... XOR
- * rsp: FRM_HDR CMD_GET+chn TYPE vL vH ntfy linkage version len args... XOR
+ * get:	FRM_HDR CMD_GET XOR
+ * set:	FRM_HDR CMD_SET {ntfy linkage version len args...}... XOR
+ * rsp: FRM_HDR CMD_GET {TYPE vL vH ntfy linkage version len args...}... XOR
  */
 void ICACHE_FLASH_ATTR user_single_socket_decode_sensor( uint8_t *pbuf, uint8_t len )
 {
-	if( pbuf == NULL || len < 10 || pbuf[0] != FRAME_HEADER )
+	if( pbuf == NULL || len < 10 || pbuf[0] != FRAME_HEADER || pbuf[1] != CMD_GET )
 	{
 		return;
 	}
@@ -494,22 +566,59 @@ void ICACHE_FLASH_ATTR user_single_socket_decode_sensor( uint8_t *pbuf, uint8_t 
 	{
 		xor ^= pbuf[i];
 	}
-	if( xor != 0 || len != pbuf[8] + 10 )
+	if( xor != 0 )
 	{
 		return;
 	}
-	uint8_t chn = 0;
-	if ( pbuf[1] >= CMD_GET && pbuf[1] < CMD_GET + SENSOR_COUNT_MAX )
+	if(len == pbuf[8]+10)
 	{
-		chn = pbuf[1] - CMD_GET;
-		user_sensor_t *psensor = &user_single_socket.sensor[chn];
-		psensor->available = true;
-		psensor->type = pbuf[2];
-		psensor->value = (pbuf[4]<<8)|pbuf[3];
-		psensor->notify_enable = pbuf[5];
-		psensor->linkage_enable = pbuf[6];
-		os_memcpy( (uint8_t *)&psensor->linkage_arg, &pbuf[7], pbuf[8]+2 );
+		user_sensor[0].available = true;
+		user_sensor[0].type = pbuf[2];
+		user_sensor[0].value = (pbuf[4]<<8)|pbuf[3];
+		user_sensor[0].notify_enable = pbuf[5];
+		user_sensor[0].linkage_enable = pbuf[6];
+		os_memcpy((uint8_t *) &user_sensor[0].linkage_arg, &pbuf[7], pbuf[8]+2);
+		user_sensor[1].available = false;
+
+		os_memcpy(&user_single_socket.sensor[0], &user_sensor[0], sizeof(user_sensor_t));
+		os_memcpy(&user_single_socket.sensor[1], &user_sensor[1], sizeof(user_sensor_t));
 		user_single_socket_update_datapoint();
 		xlink_datapoint_update_all();
 	}
+	else if(len == pbuf[8] + pbuf[pbuf[8]+15] + 17)
+	{
+		user_sensor[0].available = true;
+		user_sensor[0].type = pbuf[2];
+		user_sensor[0].value = (pbuf[4]<<8)|pbuf[3];
+		user_sensor[0].notify_enable = pbuf[5];
+		user_sensor[0].linkage_enable = pbuf[6];
+		os_memcpy((uint8_t *) &user_sensor[0].linkage_arg, &pbuf[7], pbuf[8]+2);
+
+		uint8_t idx = 9 + pbuf[8];
+		user_sensor[1].available = true;
+		user_sensor[1].type = pbuf[idx];
+		user_sensor[1].value = (pbuf[idx+2]<<8)|pbuf[idx+1];
+		user_sensor[1].notify_enable = pbuf[idx+3];
+		user_sensor[1].linkage_enable = pbuf[idx+4];
+		os_memcpy((uint8_t *) &user_sensor[1].linkage_arg, &pbuf[idx+5], pbuf[idx+6]+2);
+
+		os_memcpy(&user_single_socket.sensor[0], &user_sensor[0], sizeof(user_sensor_t));
+		os_memcpy(&user_single_socket.sensor[1], &user_sensor[1], sizeof(user_sensor_t));
+		user_single_socket_update_datapoint();
+		xlink_datapoint_update_all();
+	}
+	// uint8_t chn = 0;
+	// if ( pbuf[1] >= CMD_GET && pbuf[1] < CMD_GET + SENSOR_COUNT_MAX )
+	// {
+	// 	chn = pbuf[1] - CMD_GET;
+	// 	user_sensor_t *psensor = &user_single_socket.sensor[chn];
+	// 	psensor->available = true;
+	// 	psensor->type = pbuf[2];
+	// 	psensor->value = (pbuf[4]<<8)|pbuf[3];
+	// 	psensor->notify_enable = pbuf[5];
+	// 	psensor->linkage_enable = pbuf[6];
+	// 	os_memcpy( (uint8_t *)&psensor->linkage_arg, &pbuf[7], pbuf[8]+2 );
+	// 	user_single_socket_update_datapoint();
+	// 	xlink_datapoint_update_all();
+	// }
 }

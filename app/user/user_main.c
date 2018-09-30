@@ -19,8 +19,8 @@
 /* device include */
 #include "user_led.h"
 #include "app_board_led.h"
-//#include "app_board_socket.h"
-//#include "user_single_socket.h"
+// #include "app_board_socket.h"
+// #include "user_single_socket.h"
 
 
 /******************************************************************************
@@ -80,17 +80,17 @@ void ICACHE_FLASH_ATTR user_rf_pre_init( void )
 
 void ICACHE_FLASH_ATTR app_init( void )
 {
-	UART_SetPrintPort(UART1);
 	os_delay_us(60000);
 
 	app_board_led_init();
 	xlink_init( &user_led );
 
-//	app_board_socket_init();
-//	uart0_init(BAUDRATE_9600, 16 );
-//	uart0_set_rx_cb( user_single_socket_decode_sensor );
-//	uart_enable_isr();
-//	xlink_init( &user_single_socket );
+	// UART_SetPrintPort(UART1);
+	// app_board_socket_init();
+	// uart0_init(BAUDRATE_9600, 16 );
+	// uart0_set_rx_cb( user_single_socket_decode_sensor );
+	// uart_enable_isr();
+	// xlink_init( &user_single_socket );
 
 	user_rtc_init();
 	user_net_init();

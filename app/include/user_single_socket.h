@@ -24,11 +24,10 @@
 #define POWER_OFF					0
 
 typedef struct{
-	unsigned timer : 15;
-	unsigned action : 1;
+	unsigned timer : 16;
+	unsigned action : 8;
 	unsigned repeat : 7;
 	unsigned enable : 1;
-	unsigned flag : 8;
 }socket_timer_t;
 
 typedef struct{

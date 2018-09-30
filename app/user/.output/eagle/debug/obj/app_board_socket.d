@@ -19,4 +19,7 @@
  ../../include/os_type.h ../../include/ets_sys.h ../../include/c_types.h \
  ../../include/eagle_soc.h ../include/app_config.h ../../include/gpio.h \
  ../include/user_uart.h ../../include/c_types.h ../include/driver/uart.h \
- ../include/driver/uart_register.h ../../include/eagle_soc.h
+ ../include/driver/uart_register.h ../../include/eagle_soc.h \
+ ../include/user_smartconfig.h ../../include/smartconfig.h \
+ ../../include/user_interface.h ../../include/ip_addr.h \
+ ../../include/queue.h ../../include/spi_flash.h ../../include/gpio.h

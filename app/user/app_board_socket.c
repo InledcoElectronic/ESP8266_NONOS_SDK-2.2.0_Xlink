@@ -9,6 +9,17 @@
 #include "app_board_socket.h"
 #include "gpio.h"
 #include "user_uart.h"
+#include "user_smartconfig.h"
+
+LOCAL void ICACHE_FLASH_ATTR sc_led_set(bool value)
+{
+	GPIO_OUTPUT_SET(LEDB_IO_NUM, value);
+}
+
+LOCAL bool ICACHE_FLASH_ATTR sc_led_get()
+{
+	return ((GPIO_REG_READ(GPIO_OUT_ADDRESS)>>(LEDB_IO_NUM))&BIT0);
+}
 
 void ICACHE_FLASH_ATTR app_board_socket_init()
 {
@@ -29,6 +40,7 @@ void ICACHE_FLASH_ATTR app_board_socket_init()
 	ledg_off();
 	ledb_off();
 	relay_off();
+	user_smartconfig_init_led(sc_led_set, sc_led_get);
 }
 
 

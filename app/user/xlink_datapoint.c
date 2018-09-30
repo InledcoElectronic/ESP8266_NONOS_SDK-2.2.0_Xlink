@@ -257,6 +257,10 @@ void XLINK_FUNCTION xlink_array_to_datapoints( const uint8_t *pdata, uint16_t da
 			break;
 		}
 		idx = pdata[i];
+		if(idx >= DATAPOINT_MAX_NUM)
+		{
+			break;
+		}
 		type = pdata[i+1]>>4;
 		len = ((pdata[i+1]&0x0F)<<8)|pdata[i+2];
 		pdp = p_datapoints[idx];
@@ -281,27 +285,27 @@ void XLINK_FUNCTION xlink_array_to_datapoints( const uint8_t *pdata, uint16_t da
 					{
 						pdp->pdata[j] = pdata[i+2+len-j];
 					}
-					i += 3 + len;
 					flag = true;
 				}
+				i += 3 + len;
 				break;
 			case DP_TYPE_STRING:
 				if ( len > 0 && len <= DATAPOINT_STR_MAX_LEN )
 				{
 					pdp->length = len;
 					os_memcpy( pdp->pdata, &pdata[3+i], len );
-					i += 3 + len;
 					flag = true;
 				}
+				i += 3 + len;
 				break;
 			case DP_TYPE_BINARY:
 				if ( len > 0 && len <= DATAPOINT_BIN_MAX_LEN )
 				{
 					pdp->length = len;
 					os_memcpy( pdp->pdata, &pdata[3+i], len );
-					i += 3 + len;
 					flag = true;
 				}
+				i += 3 + len;
 				break;
 			default:
 				break;

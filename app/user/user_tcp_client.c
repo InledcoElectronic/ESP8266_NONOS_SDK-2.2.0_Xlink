@@ -97,6 +97,7 @@ LOCAL void ICACHE_FLASH_ATTR user_tcp_start_dns( struct espconn *pespconn )
 	os_timer_disarm( &dns_timer );
 	os_timer_setfn( &dns_timer, user_tcp_dns_check_cb, pespconn );
 	os_timer_arm( &dns_timer, 1000, 1 );
+	app_printf( "\nStart DNS...\n" );
 }
 
 void ICACHE_FLASH_ATTR user_tcp_func_process( void *arg )
@@ -151,9 +152,10 @@ LOCAL void ICACHE_FLASH_ATTR user_tcp_disconnect_cb( void *arg )
 	{
 		return;
 	}
-#ifdef	USE_TX_DEBUG
-	os_printf( "tcp disconnected..." );
-#endif
+	app_printf( "tcp disconnected..." );
+	isDnsFound = false;
+	isConnectServer = false;
+	flag_dns_discovery = false;
 	xlink_disconnect_cloud();
 	user_tcp_disconnect();
 	user_tcp_reconnect();

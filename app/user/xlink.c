@@ -21,6 +21,8 @@ LOCAL struct xlink_sdk_instance_t g_xlink_sdk_instance;
 LOCAL struct xlink_sdk_instance_t *p_xlink_sdk_instance;
 LOCAL uint16_t msgid;
 
+void xlink_enable_local_pair();
+
 void ICACHE_FLASH_ATTR xlink_init( xlink_device_t *pdev )
 {
 	uint16_t version;
@@ -46,9 +48,10 @@ void ICACHE_FLASH_ATTR xlink_init( xlink_device_t *pdev )
 	g_xlink_sdk_instance.cloud_enable = 1;
 	g_xlink_sdk_instance.local_enable = 1;
 	g_xlink_sdk_instance.log_enable = 0;
-	g_xlink_sdk_instance.log_level = 0;
+	g_xlink_sdk_instance.log_level = 3;
 
 	xlink_sdk_init( &p_xlink_sdk_instance );
+	xlink_enable_local_pair();
 
 	pdev->init();
 	xlink_setOnDatapointChangedCallback( pdev->datapoint_changed_cb );
@@ -128,6 +131,11 @@ void XLINK_FUNCTION xlink_connect_cloud()
 void XLINK_FUNCTION xlink_disconnect_cloud()
 {
 	xlink_sdk_disconnect_cloud( &p_xlink_sdk_instance );
+}
+
+void XLINK_FUNCTION xlink_enable_local_pair()
+{
+	xlink_enable_local_pairing( &p_xlink_sdk_instance, 0 );
 }
 
 void XLINK_FUNCTION xlink_post_event( xlink_uint16 *msgid, struct xlink_sdk_event_t **event )

@@ -20,5 +20,4 @@
  ../../include/os_type.h ../../include/ets_sys.h \
  ../../include/eagle_soc.h ../../include/user_interface.h \
  ../../include/ip_addr.h ../../include/queue.h ../../include/spi_flash.h \
- ../../include/gpio.h ../../include/c_types.h ../include/driver/gpio16.h \
- ../../include/os_type.h ../include/app_config.h
+ ../../include/gpio.h ../../include/c_types.h ../include/app_config.h

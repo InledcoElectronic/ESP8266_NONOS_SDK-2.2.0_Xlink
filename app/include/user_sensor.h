@@ -37,12 +37,11 @@ typedef enum _sensor_type{
 typedef union{
 	struct{
 		int8_t threshold;
-		bool night_mode_enable;
 		uint16_t night_start;
 		uint16_t night_end;
 		int8_t night_threshold;
 	};
-	uint8_t array[7];
+	uint8_t array[6];
 }thermostat_arg_t;
 
 typedef struct{
